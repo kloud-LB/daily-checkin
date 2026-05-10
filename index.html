@@ -344,6 +344,17 @@ body{
 .year-switcher button:active{transform:scale(0.9)}
 .year-switcher .year-label{font-size:1rem;font-weight:700}
 
+/* ===== Data Bar ===== */
+.data-bar{display:flex;align-items:center;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.data-bar-title{font-size:0.75rem;font-weight:600;color:var(--text-tertiary);margin-right:4px}
+.data-btn{
+  padding:8px 14px;border-radius:12px;border:1px solid var(--card-border);
+  background:var(--card-bg);cursor:pointer;font-size:0.82rem;font-weight:600;
+  color:var(--text-secondary);font-family:inherit;
+  transition:all 0.2s ease;
+}
+.data-btn:active{transform:scale(0.94);background:var(--input-bg)}
+
 /* ===== Stats Task Card ===== */
 .stats-task-card{
   background:var(--card-bg);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
@@ -464,6 +475,11 @@ body{
       <span class="year-label" id="yearLabel"></span>
       <button id="yearNext">▸</button>
     </div>
+    <div class="data-bar">
+      <span class="data-bar-title">数据管理</span>
+      <button class="data-btn" id="exportBtn">📤 导出</button>
+      <button class="data-btn" id="importBtn">📥 导入</button>
+    </div>
     <div class="heatmap-wrap">
       <div style="display:flex">
         <div class="heatmap-labels-col" id="heatmapColLabels"></div>
@@ -539,6 +555,9 @@ body{
 <!-- Toast -->
 <div class="toast" id="toast"></div>
 
+<!-- Hidden file input for import -->
+<input type="file" id="importFileInput" accept=".json" style="display:none">
+
 <script>
 /* ================================================================
    Daily Check-in App - localStorage-based PWA
@@ -588,6 +607,47 @@ function loadHistory() {
   catch(e) { history = {}; }
 }
 function saveHistory() { localStorage.setItem(STORAGE_HISTORY, JSON.stringify(history)); }
+
+// ---- Import / Export ----
+function exportData() {
+  var data = { tasks: tasks, history: history, exportDate: todayStr() };
+  var blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = 'checkin_backup_' + todayStr() + '.json';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast('数据已导出为 JSON 文件');
+}
+
+function importData(file) {
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      var data = JSON.parse(e.target.result);
+      if (!data.tasks || !data.history) throw new Error('格式无效');
+      // Confirm
+      var taskCount = data.tasks.length;
+      var historyDays = Object.keys(data.history).length;
+      var msg = '即将导入 ' + taskCount + ' 个任务、' + historyDays + ' 天记录。\n当前数据将被替换，确定继续？';
+      if (confirm(msg)) {
+        tasks = data.tasks;
+        history = data.history;
+        saveTasks();
+        saveHistory();
+        renderTasks();
+        renderStats();
+        showToast('导入成功！已恢复 ' + taskCount + ' 个任务');
+      }
+    } catch (err) {
+      showToast('导入失败：文件格式不正确');
+    }
+  };
+  reader.readAsText(file);
+}
 
 function getTaskProgress(taskId, dateStr) {
   const dayData = history[dateStr];
@@ -1218,6 +1278,12 @@ function bindEvents() {
 
   $('#yearPrev').onclick = function() { statsYear--; renderStats(); };
   $('#yearNext').onclick = function() { statsYear++; renderStats(); };
+
+  $('#exportBtn').onclick = function() { exportData(); };
+  $('#importBtn').onclick = function() { $('#importFileInput').click(); };
+  $('#importFileInput').onchange = function() {
+    if (this.files && this.files[0]) { importData(this.files[0]); this.value = ''; }
+  };
 
   // Keyboard
   document.addEventListener('keydown', function(e) {
