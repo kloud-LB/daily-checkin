@@ -1031,10 +1031,11 @@ function renderOverviewHeatmap() {
 
   $('#heatmapColLabels').innerHTML = DAY_LABELS.map(function(s) { return '<span>' + s + '</span>'; }).join('');
 
+  // Grid: 52 cols (weeks) x 7 rows (days), GitHub style
   var cellsHtml = '';
-  for (var row = 0; row < 7; row++) {
+  for (var col = 0; col < 52; col++) {
     cellsHtml += '<div class="heatmap-col">';
-    for (var col = 0; col < 52; col++) {
+    for (var row = 0; row < 7; row++) {
       var d = grid[row][col];
       var dateStr = todayStr(d);
       var inYear = d.getFullYear() === statsYear;
@@ -1105,33 +1106,39 @@ function countYearCompletions(taskId, year) {
 function buildTaskHeatmap(task) {
   var grid = getHeatmapGrid(statsYear);
 
-  // Row labels: month indicators
-  var rowLabelsHtml = '';
+  // Top labels: month indicators per week column
+  var colMonths = [];
+  for (var col = 0; col < 52; col++) { colMonths.push(grid[0][col].getMonth()); }
   var prevMonth = -1;
-  for (var row = 0; row < 52; row++) {
-    var m = grid[0][row].getMonth();
-    if (m !== prevMonth) { prevMonth = m; rowLabelsHtml += '<span>' + MONTHS[m] + '</span>'; }
-    else { rowLabelsHtml += '<span></span>'; }
-  }
+  var topLabelsHtml = colMonths.map(function(m) {
+    if (m !== prevMonth) { prevMonth = m; return MONTHS[m]; }
+    return '';
+  }).map(function(s) { return '<span>' + s + '</span>'; }).join('');
 
-  var html = '<div class="heatmap-col-labels">' + DAY_LABELS.map(function(s) { return '<span>' + s + '</span>'; }).join('') + '</div>';
-  html += '<div style="display:flex">';
-  html += '<div class="heatmap-row-labels">' + rowLabelsHtml + '</div>';
-  html += '<div class="heatmap-grid">';
-  for (var row = 0; row < 52; row++) {
-    html += '<div class="heatmap-row">';
-    for (var col = 0; col < 7; col++) {
-      var d = grid[col][row];
+  // Left labels: day of week
+  var leftLabelsHtml = DAY_LABELS.map(function(s) { return '<span>' + s + '</span>'; }).join('');
+
+  // Grid: 52 cols (weeks) x 7 rows (days)
+  var cellsHtml = '';
+  for (var col = 0; col < 52; col++) {
+    cellsHtml += '<div class="heatmap-col">';
+    for (var row = 0; row < 7; row++) {
+      var d = grid[row][col];
       var dateStr = todayStr(d);
       var inYear = d.getFullYear() === statsYear;
       var rate = inYear ? getTaskCompletionRate(task.id, dateStr) : -1;
       var bg = inYear ? heatmapColor(rate, task.color) : 'transparent';
       var border = inYear ? 'var(--heatmap-border)' : 'transparent';
-      html += '<div class="heatmap-cell" style="background:' + bg + ';border:1px solid ' + border + '"></div>';
+      cellsHtml += '<div class="heatmap-cell" style="background:' + bg + ';border:1px solid ' + border + '"></div>';
     }
-    html += '</div>';
+    cellsHtml += '</div>';
   }
-  html += '</div></div>';
+
+  var html = '<div class="heatmap-labels-row">' + topLabelsHtml + '</div>';
+  html += '<div style="display:flex">';
+  html += '<div class="heatmap-labels-col">' + leftLabelsHtml + '</div>';
+  html += '<div class="heatmap-grid">' + cellsHtml + '</div>';
+  html += '</div>';
   return html;
 }
 
@@ -1208,10 +1215,7 @@ function renderTaskStats() {
           '</div>' +
           '<div class="stats-section">' +
             '<div class="stats-section-title">年度视图</div>' +
-            '<div class="heatmap-wrap"><div style="display:flex">' +
-              '<div class="heatmap-labels-col">' + DAY_LABELS.map(function(s) { return '<span>' + s + '</span>'; }).join('') + '</div>' +
-              '<div>' + buildTaskHeatmap(t) + '</div>' +
-            '</div></div>' +
+            '<div class="heatmap-wrap">' + buildTaskHeatmap(t) + '</div>' +
           '</div>' +
           '<div class="stats-section">' +
             '<div class="stats-section-title">月度视图</div>' +
