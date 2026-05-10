@@ -317,7 +317,7 @@ body{
   transition:transform 0.15s ease;flex-shrink:0;
 }
 .heatmap-cell:hover{transform:scale(1.4);z-index:2}
-.heatmap-labels-row{position:relative;height:16px;margin-bottom:4px}
+.heatmap-labels-row{position:relative;height:16px;margin-bottom:4px;min-width:725px}
 .heatmap-labels-row span{position:absolute;font-size:0.55rem;color:var(--text-tertiary);white-space:nowrap}
 .heatmap-labels-col{display:flex;flex-direction:column;gap:3px;margin-right:4px;justify-content:flex-start}
 .heatmap-labels-col span{height:11px;line-height:11px;font-size:0.5rem;color:var(--text-tertiary)}
@@ -442,6 +442,7 @@ body{
   .task-list{display:grid;grid-template-columns:repeat(2,1fr)}
   .heatmap-cell{width:14px;height:14px}
   .heatmap-labels-col span{height:14px;line-height:14px}
+  .heatmap-labels-row{min-width:881px}
 }
 </style>
 </head>
