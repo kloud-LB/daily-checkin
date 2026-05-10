@@ -699,6 +699,24 @@ function playDing() {
   } catch(e) {}
 }
 
+function playUndo() {
+  try {
+    var C = window.AudioContext || window.webkitAudioContext;
+    if (!C) return;
+    var ctx = new C();
+    var o = ctx.createOscillator();
+    var g = ctx.createGain();
+    o.connect(g); g.connect(ctx.destination);
+    o.type = 'sine';
+    o.frequency.setValueAtTime(500, ctx.currentTime);
+    o.frequency.exponentialRampToValueAtTime(300, ctx.currentTime + 0.1);
+    g.gain.setValueAtTime(0.12, ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.2);
+    o.start(ctx.currentTime);
+    o.stop(ctx.currentTime + 0.2);
+  } catch(e) {}
+}
+
 
 // ---- Toast ----
 function showToast(msg, duration) {
@@ -800,8 +818,20 @@ function handleCheckin(taskId, card) {
   var task = tasks.find(function(t) { return t.id === taskId; });
   if (!task) return;
   var today = todayStr();
-  if (isTaskDone(taskId, today)) return;
 
+  // Undo: task is completed, reset to zero
+  if (isTaskDone(taskId, today)) {
+    if (history[today] && history[today][taskId]) {
+      delete history[today][taskId];
+      if (Object.keys(history[today]).length === 0) delete history[today];
+    }
+    saveHistory();
+    playUndo();
+    renderTasks();
+    return;
+  }
+
+  // Normal check-in
   if (!history[today]) history[today] = {};
   if (!history[today][taskId]) history[today][taskId] = { count: 0 };
   history[today][taskId].count++;
