@@ -583,6 +583,7 @@ let editingTaskId = null;
 let backfillTaskId = null;
 let lastClickTime = {};
 let confirmCallback = null;
+let audioCtx = null;
 let toastTimer = null;
 
 // ---- Helpers ----
@@ -685,17 +686,17 @@ function playDing() {
   try {
     var C = window.AudioContext || window.webkitAudioContext;
     if (!C) return;
-    var ctx = new C();
-    var o = ctx.createOscillator();
-    var g = ctx.createGain();
-    o.connect(g); g.connect(ctx.destination);
+    if (!audioCtx) audioCtx = new C();
+    var o = audioCtx.createOscillator();
+    var g = audioCtx.createGain();
+    o.connect(g); g.connect(audioCtx.destination);
     o.type = 'sine';
-    o.frequency.setValueAtTime(1200, ctx.currentTime);
-    o.frequency.exponentialRampToValueAtTime(600, ctx.currentTime + 0.08);
-    g.gain.setValueAtTime(0.18, ctx.currentTime);
-    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25);
-    o.start(ctx.currentTime);
-    o.stop(ctx.currentTime + 0.25);
+    o.frequency.setValueAtTime(1200, audioCtx.currentTime);
+    o.frequency.exponentialRampToValueAtTime(600, audioCtx.currentTime + 0.08);
+    g.gain.setValueAtTime(0.18, audioCtx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.25);
+    o.start(audioCtx.currentTime);
+    o.stop(audioCtx.currentTime + 0.25);
   } catch(e) {}
 }
 
@@ -703,17 +704,17 @@ function playUndo() {
   try {
     var C = window.AudioContext || window.webkitAudioContext;
     if (!C) return;
-    var ctx = new C();
-    var o = ctx.createOscillator();
-    var g = ctx.createGain();
-    o.connect(g); g.connect(ctx.destination);
+    if (!audioCtx) audioCtx = new C();
+    var o = audioCtx.createOscillator();
+    var g = audioCtx.createGain();
+    o.connect(g); g.connect(audioCtx.destination);
     o.type = 'sine';
-    o.frequency.setValueAtTime(500, ctx.currentTime);
-    o.frequency.exponentialRampToValueAtTime(300, ctx.currentTime + 0.1);
-    g.gain.setValueAtTime(0.12, ctx.currentTime);
-    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.2);
-    o.start(ctx.currentTime);
-    o.stop(ctx.currentTime + 0.2);
+    o.frequency.setValueAtTime(500, audioCtx.currentTime);
+    o.frequency.exponentialRampToValueAtTime(300, audioCtx.currentTime + 0.1);
+    g.gain.setValueAtTime(0.12, audioCtx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.2);
+    o.start(audioCtx.currentTime);
+    o.stop(audioCtx.currentTime + 0.2);
   } catch(e) {}
 }
 
