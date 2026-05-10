@@ -317,8 +317,8 @@ body{
   transition:transform 0.15s ease;flex-shrink:0;
 }
 .heatmap-cell:hover{transform:scale(1.4);z-index:2}
-.heatmap-labels-row{display:flex;gap:3px;margin-bottom:2px}
-.heatmap-labels-row span{width:11px;text-align:center;font-size:0.55rem;color:var(--text-tertiary)}
+.heatmap-labels-row{position:relative;height:16px;margin-bottom:4px}
+.heatmap-labels-row span{position:absolute;font-size:0.55rem;color:var(--text-tertiary);white-space:nowrap}
 .heatmap-labels-col{display:flex;flex-direction:column;gap:3px;margin-right:4px;justify-content:flex-start}
 .heatmap-labels-col span{height:11px;line-height:11px;font-size:0.5rem;color:var(--text-tertiary)}
 
@@ -441,7 +441,6 @@ body{
 @media(min-width:768px){
   .task-list{display:grid;grid-template-columns:repeat(2,1fr)}
   .heatmap-cell{width:14px;height:14px}
-  .heatmap-labels-row span{width:14px}
   .heatmap-labels-col span{height:14px;line-height:14px}
 }
 </style>
@@ -1018,15 +1017,15 @@ function heatmapColorOverview(rate) {
 function renderOverviewHeatmap() {
   var grid = getHeatmapGrid(statsYear);
 
-  var colMonths = [];
-  for (var col = 0; col < 52; col++) {
-    colMonths.push(grid[0][col].getMonth());
-  }
   var prevMonth = -1;
-  var rowLabelsHtml = colMonths.map(function(m, i) {
-    if (m !== prevMonth) { prevMonth = m; return MONTHS[m]; }
-    return '';
-  }).map(function(s) { return '<span>' + s + '</span>'; }).join('');
+  var rowLabelsHtml = '';
+  for (var col = 0; col < 52; col++) {
+    var m = grid[0][col].getMonth();
+    if (m !== prevMonth) {
+      prevMonth = m;
+      rowLabelsHtml += '<span style="left:' + (col * 14) + 'px">' + MONTHS[m] + '</span>';
+    }
+  }
   $('#heatmapRowLabels').innerHTML = rowLabelsHtml;
 
   $('#heatmapColLabels').innerHTML = DAY_LABELS.map(function(s) { return '<span>' + s + '</span>'; }).join('');
@@ -1107,13 +1106,15 @@ function buildTaskHeatmap(task) {
   var grid = getHeatmapGrid(statsYear);
 
   // Top labels: month indicators per week column
-  var colMonths = [];
-  for (var col = 0; col < 52; col++) { colMonths.push(grid[0][col].getMonth()); }
   var prevMonth = -1;
-  var topLabelsHtml = colMonths.map(function(m) {
-    if (m !== prevMonth) { prevMonth = m; return MONTHS[m]; }
-    return '';
-  }).map(function(s) { return '<span>' + s + '</span>'; }).join('');
+  var topLabelsHtml = '';
+  for (var col = 0; col < 52; col++) {
+    var m = grid[0][col].getMonth();
+    if (m !== prevMonth) {
+      prevMonth = m;
+      topLabelsHtml += '<span style="left:' + (col * 14) + 'px">' + MONTHS[m] + '</span>';
+    }
+  }
 
   // Left labels: day of week
   var leftLabelsHtml = DAY_LABELS.map(function(s) { return '<span>' + s + '</span>'; }).join('');
