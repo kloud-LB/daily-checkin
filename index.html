@@ -437,9 +437,68 @@ body{
 /* ===== Scrollbar ===== */
 ::-webkit-scrollbar{width:0;height:0}
 
+/* ===== Todo Category Pills ===== */
+.todo-pills-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;padding:0 0 12px;margin-bottom:4px;scrollbar-width:none}
+.todo-pills-wrap::-webkit-scrollbar{display:none}
+.todo-pills{display:flex;gap:8px;align-items:center}
+.todo-pill{padding:8px 16px;border-radius:16px;border:1px solid var(--card-border);background:var(--card-bg);cursor:pointer;font-size:0.82rem;font-weight:600;font-family:inherit;color:var(--text-secondary);white-space:nowrap;transition:all 0.2s ease;flex-shrink:0}
+.todo-pill.active{background:#6366f1;color:#fff;border-color:#6366f1}
+.todo-pill:active{transform:scale(0.95)}
+.todo-pill .pill-count{font-weight:400;opacity:0.7;margin-left:2px}
+.todo-pill.manage-btn{font-size:1.1rem;padding:8px 12px}
+
+/* ===== Todo Card ===== */
+.todo-list{display:flex;flex-direction:column;gap:10px}
+.todo-card{display:flex;gap:0;padding:0;background:var(--card-bg);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid var(--card-border);border-radius:16px;box-shadow:var(--card-shadow);overflow:hidden;cursor:pointer;transition:all 0.35s cubic-bezier(0.4,0,0.2,1);position:relative}
+.todo-card:active{transform:scale(0.98)}
+.todo-card.completed{opacity:0.55}
+.todo-card.cancelled{opacity:0.4}
+.todo-card .todo-bar{width:4px;flex-shrink:0;align-self:stretch;transition:background 0.3s ease}
+.todo-card.completed .todo-bar{background:#22c55e!important}
+.todo-card.cancelled .todo-bar{background:var(--text-tertiary)!important}
+.todo-card .todo-body{flex:1;min-width:0;padding:14px 16px}
+.todo-card .todo-title{font-size:0.92rem;font-weight:600;line-height:1.4;margin-bottom:4px;word-break:break-word}
+.todo-card.cancelled .todo-title{text-decoration:line-through;color:var(--text-tertiary)}
+.todo-card .todo-desc{font-size:0.78rem;color:var(--text-secondary);line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin-bottom:8px}
+.todo-card .todo-meta{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.todo-badge{display:inline-flex;align-items:center;gap:3px;padding:3px 8px;border-radius:8px;font-size:0.7rem;font-weight:600;white-space:nowrap}
+.todo-badge-deadline{background:var(--input-bg);color:var(--text-secondary)}
+.todo-badge-deadline.overdue{color:#ef4444;background:rgba(239,68,68,0.1)}
+.todo-badge-priority-high{background:rgba(239,68,68,0.12);color:#ef4444}
+.todo-badge-priority-medium{background:rgba(245,158,11,0.12);color:#d97706}
+.todo-badge-priority-low{background:rgba(34,197,94,0.12);color:#16a34a}
+.todo-card .todo-actions{display:flex;flex-direction:column;gap:2px;padding:10px 8px;flex-shrink:0;justify-content:center}
+.todo-card .todo-action-btn{width:32px;height:32px;border-radius:50%;border:none;cursor:pointer;background:var(--badge-bg);font-size:0.8rem;display:flex;align-items:center;justify-content:center;transition:all 0.2s ease;color:var(--text-secondary)}
+.todo-card .todo-action-btn:active{transform:scale(0.85)}
+.todo-card .todo-action-btn.done-btn{color:#22c55e}
+.todo-card .todo-action-btn.postpone-btn{color:#f59e0b}
+.todo-card .todo-action-btn.cancel-btn{color:var(--text-tertiary)}
+.todo-card .todo-action-btn.edit-btn{color:var(--text-secondary)}
+.todo-card .todo-action-btn.delete-btn{color:#ef4444}
+
+/* ===== Priority Toggle ===== */
+.priority-toggle{display:flex;gap:8px}
+.priority-opt{flex:1;padding:10px;border-radius:12px;border:2px solid var(--input-border);background:var(--input-bg);cursor:pointer;font-size:0.85rem;font-weight:600;font-family:inherit;text-align:center;transition:all 0.2s ease;color:var(--text-secondary)}
+.priority-opt:active{transform:scale(0.96)}
+.priority-opt.high.selected{border-color:#ef4444;background:rgba(239,68,68,0.1);color:#ef4444}
+.priority-opt.medium.selected{border-color:#f59e0b;background:rgba(245,158,11,0.1);color:#d97706}
+.priority-opt.low.selected{border-color:#22c55e;background:rgba(34,197,94,0.1);color:#16a34a}
+
+/* ===== Date Time Row ===== */
+.datetime-row{display:flex;gap:10px}
+.datetime-row .form-input{flex:1}
+
+/* ===== Category Management ===== */
+.cat-list{display:flex;flex-direction:column;gap:8px}
+.cat-item{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:14px;background:var(--input-bg);border:1px solid var(--input-border);transition:all 0.2s ease}
+.cat-item .cat-dot{width:14px;height:14px;border-radius:50%;flex-shrink:0}
+.cat-item .cat-name{flex:1;font-size:0.9rem;font-weight:600}
+.cat-item .cat-actions{display:flex;gap:6px}
+
 /* ===== Responsive PC ===== */
 @media(min-width:768px){
   .task-list{display:grid;grid-template-columns:repeat(2,1fr)}
+  .todo-list{display:grid;grid-template-columns:repeat(2,1fr)}
   .heatmap-cell{width:14px;height:14px}
   .heatmap-labels-col span{height:14px;line-height:14px}
   .heatmap-labels-row{min-width:881px}
@@ -492,6 +551,18 @@ body{
     <div class="heatmap-tooltip" id="heatmapTooltip"></div>
     <div style="margin-top:20px" id="statsTaskList"></div>
   </div>
+
+  <!-- Todo View -->
+  <div class="view" id="viewTodo">
+    <div class="todo-pills-wrap">
+      <div class="todo-pills" id="todoPills"></div>
+    </div>
+    <div class="todo-list" id="todoList"></div>
+    <div class="empty-state" id="todoEmpty" style="display:none">
+      <div class="empty-icon">📝</div>
+      <p>还没有待办事项，点击右下角 + 创建</p>
+    </div>
+  </div>
 </div>
 
 <!-- FAB -->
@@ -504,6 +575,9 @@ body{
   </button>
   <button class="nav-item" data-view="viewStats">
     <span class="nav-icon">📊</span> 统计
+  </button>
+  <button class="nav-item" data-view="viewTodo">
+    <span class="nav-icon">📝</span> 待办
   </button>
 </nav>
 
@@ -549,6 +623,89 @@ body{
   </div>
 </div>
 
+<!-- Todo Form Modal -->
+<div class="modal-overlay" id="todoModalOverlay">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="todoModalTitle">新建待办</div>
+    <div class="form-group">
+      <label class="form-label">待办事项 *</label>
+      <input class="form-input" id="todoTitleInput" placeholder="例如：提交Q2报告" maxlength="60">
+    </div>
+    <div class="form-group">
+      <label class="form-label">详细描述</label>
+      <textarea class="form-input" id="todoDescInput" placeholder="可选，添加备注说明" rows="3" style="resize:none"></textarea>
+    </div>
+    <div class="form-group">
+      <label class="form-label">截止时间</label>
+      <div class="datetime-row">
+        <input class="form-input" id="todoDateInput" type="date">
+        <input class="form-input" id="todoTimeInput" type="time" placeholder="时间(选填)">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">优先级</label>
+      <div class="priority-toggle" id="priorityToggle">
+        <button class="priority-opt low" data-priority="low">🟢 低</button>
+        <button class="priority-opt medium selected" data-priority="medium">🟡 中</button>
+        <button class="priority-opt high" data-priority="high">🔴 高</button>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">待办分类 *</label>
+      <select class="form-select" id="todoCategorySelect"></select>
+    </div>
+    <button class="form-submit" id="todoFormSubmit">保存</button>
+  </div>
+</div>
+
+<!-- Category Management Modal -->
+<div class="modal-overlay" id="catModalOverlay">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">管理分类</div>
+    <div class="cat-list" id="catList"></div>
+    <button class="form-submit" id="catAddBtn" style="margin-top:16px">+ 新建分类</button>
+  </div>
+</div>
+
+<!-- Category Edit Modal -->
+<div class="modal-overlay" id="catEditOverlay">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="catEditTitle">编辑分类</div>
+    <div class="form-group">
+      <label class="form-label">分类名称</label>
+      <input class="form-input" id="catNameInput" placeholder="分类名称" maxlength="12">
+    </div>
+    <div class="form-group">
+      <label class="form-label">颜色</label>
+      <div class="color-presets" id="catColorPresets"></div>
+      <input class="form-input" id="catColorInput" type="color" value="#6366f1" style="margin-top:8px;height:36px;padding:2px 8px">
+    </div>
+    <button class="form-submit" id="catEditSubmit">保存</button>
+  </div>
+</div>
+
+<!-- Postpone Dialog -->
+<div class="modal-overlay" id="postponeOverlay">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">延期至</div>
+    <div class="form-group">
+      <label class="form-label">新截止日期</label>
+      <div class="datetime-row">
+        <input class="form-input" id="postponeDateInput" type="date">
+        <input class="form-input" id="postponeTimeInput" type="time" placeholder="时间(选填)">
+      </div>
+    </div>
+    <div style="display:flex;gap:10px">
+      <button class="form-submit" id="postponeClear" style="background:var(--input-bg);color:var(--text);flex:1">清除截止时间</button>
+      <button class="form-submit" id="postponeSubmit" style="flex:1">确定</button>
+    </div>
+  </div>
+</div>
+
 <!-- Checkmark Animation Container -->
 <div id="checkmarkContainer"></div>
 
@@ -573,6 +730,14 @@ const STORAGE_TASKS = 'checkin_tasks';
 const STORAGE_HISTORY = 'checkin_history';
 const STORAGE_THEME = 'checkin_theme';
 const DEBOUNCE_MS = 300;
+const STORAGE_TODO_CATEGORIES = 'todo_categories';
+const STORAGE_TODO_ITEMS = 'todo_items';
+const PRIORITY_LABELS = { high: '高', medium: '中', low: '低' };
+const DEFAULT_CATEGORIES = [
+  { id: 'work', name: '工作', color: '#6366f1', createdAt: 0 },
+  { id: 'life', name: '生活', color: '#ec4899', createdAt: 1 },
+  { id: 'study', name: '学习', color: '#22c55e', createdAt: 2 }
+];
 
 // ---- State ----
 let tasks = [];
@@ -585,6 +750,13 @@ let lastClickTime = {};
 let confirmCallback = null;
 let audioCtx = null;
 let toastTimer = null;
+// Todo state
+let todoCategories = [];
+let todoItems = [];
+let todoFilterCategory = 'all';
+let editingTodoId = null;
+let editingCatId = null;
+let postponeTodoId = null;
 
 // ---- Helpers ----
 function todayStr(d) {
@@ -608,6 +780,22 @@ function loadHistory() {
   catch(e) { history = {}; }
 }
 function saveHistory() { localStorage.setItem(STORAGE_HISTORY, JSON.stringify(history)); }
+
+// ---- Todo Data ----
+function loadTodoCategories() {
+  try { todoCategories = JSON.parse(localStorage.getItem(STORAGE_TODO_CATEGORIES)); }
+  catch(e) { todoCategories = null; }
+  if (!todoCategories || !Array.isArray(todoCategories) || todoCategories.length === 0) {
+    todoCategories = JSON.parse(JSON.stringify(DEFAULT_CATEGORIES));
+    saveTodoCategories();
+  }
+}
+function saveTodoCategories() { localStorage.setItem(STORAGE_TODO_CATEGORIES, JSON.stringify(todoCategories)); }
+function loadTodoItems() {
+  try { todoItems = JSON.parse(localStorage.getItem(STORAGE_TODO_ITEMS)) || []; }
+  catch(e) { todoItems = []; }
+}
+function saveTodoItems() { localStorage.setItem(STORAGE_TODO_ITEMS, JSON.stringify(todoItems)); }
 
 // ---- Import / Export ----
 function exportData() {
@@ -1278,6 +1466,479 @@ function renderStats() {
   renderTaskStats();
 }
 
+// ---- Todo Sorting ----
+function sortTodoItems(list) {
+  var pending = [], completed = [], cancelled = [];
+  list.forEach(function(item) {
+    if (item.status === 'completed') completed.push(item);
+    else if (item.status === 'cancelled') cancelled.push(item);
+    else pending.push(item);
+  });
+  // Sort by priority (high→medium→low), then by deadline (near→far), no-deadline last
+  var priorityOrder = { high: 0, medium: 1, low: 2 };
+  pending.sort(function(a, b) {
+    var pa = priorityOrder[a.priority] || 1;
+    var pb = priorityOrder[b.priority] || 1;
+    if (pa !== pb) return pa - pb;
+    if (!a.deadline && !b.deadline) return a.createdAt - b.createdAt;
+    if (!a.deadline) return 1;
+    if (!b.deadline) return -1;
+    return new Date(a.deadline) - new Date(b.deadline);
+  });
+  completed.sort(function(a, b) { return (b.completedAt || 0) - (a.completedAt || 0); });
+  cancelled.sort(function(a, b) { return b.createdAt - a.createdAt; });
+  return pending.concat(completed).concat(cancelled);
+}
+
+function isTodoOverdue(item) {
+  if (!item.deadline || item.status !== 'pending') return false;
+  return new Date(item.deadline) < new Date();
+}
+
+function getTodoDeadlineDisplay(item) {
+  if (!item.deadline) return '';
+  var d = new Date(item.deadline);
+  var m = d.getMonth() + 1, day = d.getDate();
+  var text = m + '/' + day;
+  if (d.getHours() > 0 || d.getMinutes() > 0) {
+    text += ' ' + String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+  }
+  return text;
+}
+
+function countTodosByCategory(catId, list) {
+  return list.filter(function(item) { return item.categoryId === catId && item.status === 'pending'; }).length;
+}
+
+// ---- Todo Rendering ----
+function renderTodoPills() {
+  var pills = $('#todoPills');
+  var allPending = todoItems.filter(function(item) { return item.status === 'pending'; }).length;
+  var html = '<button class="todo-pill' + (todoFilterCategory === 'all' ? ' active' : '') + '" data-cat="all">全部<span class="pill-count">(' + allPending + ')</span></button>';
+  todoCategories.forEach(function(cat) {
+    var count = countTodosByCategory(cat.id, todoItems);
+    html += '<button class="todo-pill' + (todoFilterCategory === cat.id ? ' active' : '') + '" data-cat="' + cat.id + '" style="' + (todoFilterCategory === cat.id ? 'background:' + cat.color + ';border-color:' + cat.color : '') + '">' + escHtml(cat.name) + '<span class="pill-count">(' + count + ')</span></button>';
+  });
+  html += '<button class="todo-pill manage-btn" id="manageCatsBtn" title="管理分类">⚙</button>';
+  pills.innerHTML = html;
+
+  pills.onclick = function(e) {
+    var pill = e.target.closest('.todo-pill');
+    if (!pill) return;
+    if (pill === $('#manageCatsBtn')) { openCatManage(); return; }
+    todoFilterCategory = pill.dataset.cat;
+    renderTodoPills();
+    renderTodoList();
+  };
+}
+
+function renderTodoList() {
+  var list = $('#todoList');
+  var empty = $('#todoEmpty');
+  var filtered = todoFilterCategory === 'all'
+    ? todoItems.slice()
+    : todoItems.filter(function(item) { return item.categoryId === todoFilterCategory; });
+
+  if (filtered.length === 0) { list.innerHTML = ''; empty.style.display = ''; return; }
+  empty.style.display = 'none';
+
+  var sorted = sortTodoItems(filtered);
+  list.innerHTML = sorted.map(function(item) {
+    var cat = todoCategories.find(function(c) { return c.id === item.categoryId; });
+    var catColor = cat ? cat.color : '#6366f1';
+    var statusCls = item.status === 'completed' ? ' completed' : (item.status === 'cancelled' ? ' cancelled' : '');
+    var deadlineStr = getTodoDeadlineDisplay(item);
+    var overdue = isTodoOverdue(item);
+    var descHtml = item.description ? '<div class="todo-desc">' + escHtml(item.description) + '</div>' : '';
+    var metaHtml = '<div class="todo-meta">';
+    if (deadlineStr) {
+      metaHtml += '<span class="todo-badge todo-badge-deadline' + (overdue ? ' overdue' : '') + '">' +
+        (overdue ? '⚠ ' : '📅 ') + deadlineStr + '</span>';
+    }
+    if (item.status === 'postponed') {
+      metaHtml += '<span class="todo-badge todo-badge-status postponed">已延期</span>';
+    }
+    metaHtml += '<span class="todo-badge todo-badge-priority-' + item.priority + '">' +
+      PRIORITY_LABELS[item.priority] + '优先</span>';
+    if (item.status === 'completed') {
+      metaHtml += '<span class="todo-badge todo-badge-status" style="color:#22c55e">✓ 已完成</span>';
+    } else if (item.status === 'cancelled') {
+      metaHtml += '<span class="todo-badge todo-badge-status" style="color:var(--text-tertiary)">✕ 已取消</span>';
+    }
+    metaHtml += '</div>';
+
+    var actionsHtml = '';
+    if (item.status === 'pending' || item.status === 'postponed') {
+      actionsHtml =
+        '<div class="todo-actions">' +
+          '<button class="todo-action-btn done-btn" data-action="complete" title="完成">✓</button>' +
+          '<button class="todo-action-btn postpone-btn" data-action="postpone" title="延期">🕐</button>' +
+          '<button class="todo-action-btn cancel-btn" data-action="cancel" title="取消">✕</button>' +
+          '<button class="todo-action-btn edit-btn" data-action="edit" title="编辑">✎</button>' +
+          '<button class="todo-action-btn delete-btn" data-action="delete" title="删除">🗑</button>' +
+        '</div>';
+    } else if (item.status === 'completed') {
+      actionsHtml =
+        '<div class="todo-actions">' +
+          '<button class="todo-action-btn done-btn" data-action="undo" title="撤销完成">↩</button>' +
+          '<button class="todo-action-btn delete-btn" data-action="delete" title="删除">🗑</button>' +
+        '</div>';
+    } else if (item.status === 'cancelled') {
+      actionsHtml =
+        '<div class="todo-actions">' +
+          '<button class="todo-action-btn done-btn" data-action="restore" title="恢复">↩</button>' +
+          '<button class="todo-action-btn delete-btn" data-action="delete" title="删除">🗑</button>' +
+        '</div>';
+    }
+
+    return '<div class="todo-card' + statusCls + '" data-todo-id="' + item.id + '">' +
+      '<div class="todo-bar" style="background:' + catColor + '"></div>' +
+      '<div class="todo-body">' +
+        '<div class="todo-title">' + escHtml(item.title) + '</div>' +
+        descHtml +
+        metaHtml +
+      '</div>' +
+      actionsHtml +
+    '</div>';
+  }).join('');
+
+  // Delegate events
+  list.onclick = function(e) {
+    var btn = e.target.closest('.todo-action-btn');
+    if (!btn) return;
+    var card = btn.closest('.todo-card');
+    if (!card) return;
+    var todoId = card.dataset.todoId;
+    var action = btn.dataset.action;
+    e.stopPropagation();
+    if (action === 'complete') completeTodo(todoId);
+    else if (action === 'undo' || action === 'restore') restoreTodo(todoId);
+    else if (action === 'postpone') openPostpone(todoId);
+    else if (action === 'cancel') cancelTodo(todoId);
+    else if (action === 'edit') openEditTodoForm(todoId);
+    else if (action === 'delete') confirmDeleteTodo(todoId);
+  };
+}
+
+function renderTodoView() {
+  if (currentView !== 'viewTodo') return;
+  renderTodoPills();
+  renderTodoList();
+}
+
+// ---- Todo Form ----
+function openTodoForm() {
+  editingTodoId = null;
+  $('#todoModalTitle').textContent = '新建待办';
+  $('#todoTitleInput').value = '';
+  $('#todoDescInput').value = '';
+  $('#todoDateInput').value = '';
+  $('#todoTimeInput').value = '';
+  setPriority('medium');
+  populateCategorySelect();
+  $('#todoModalOverlay').classList.add('show');
+  setTimeout(function() { $('#todoTitleInput').focus(); }, 350);
+}
+
+function openEditTodoForm(todoId) {
+  var item = todoItems.find(function(t) { return t.id === todoId; });
+  if (!item) return;
+  editingTodoId = todoId;
+  $('#todoModalTitle').textContent = '编辑待办';
+  $('#todoTitleInput').value = item.title;
+  $('#todoDescInput').value = item.description || '';
+  if (item.deadline) {
+    var d = new Date(item.deadline);
+    $('#todoDateInput').value = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+    $('#todoTimeInput').value = String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+  } else {
+    $('#todoDateInput').value = '';
+    $('#todoTimeInput').value = '';
+  }
+  setPriority(item.priority);
+  populateCategorySelect(item.categoryId);
+  $('#todoModalOverlay').classList.add('show');
+}
+
+function closeTodoForm() {
+  $('#todoModalOverlay').classList.remove('show');
+  editingTodoId = null;
+}
+
+function saveTodoItem() {
+  var title = $('#todoTitleInput').value.trim();
+  var categoryId = $('#todoCategorySelect').value;
+  if (!title) { showToast('请输入待办事项'); return; }
+  if (!categoryId) { showToast('请选择分类'); return; }
+
+  var deadline = null;
+  var dateVal = $('#todoDateInput').value;
+  if (dateVal) {
+    var timeVal = $('#todoTimeInput').value || '00:00';
+    deadline = new Date(dateVal + 'T' + timeVal).toISOString();
+  }
+
+  var priority = getSelectedPriority();
+
+  if (editingTodoId) {
+    var idx = todoItems.findIndex(function(t) { return t.id === editingTodoId; });
+    if (idx >= 0) {
+      todoItems[idx].title = title;
+      todoItems[idx].description = $('#todoDescInput').value.trim();
+      todoItems[idx].deadline = deadline;
+      todoItems[idx].priority = priority;
+      todoItems[idx].categoryId = categoryId;
+    }
+  } else {
+    todoItems.push({
+      id: Date.now().toString(),
+      categoryId: categoryId,
+      title: title,
+      description: $('#todoDescInput').value.trim(),
+      deadline: deadline,
+      priority: priority,
+      status: 'pending',
+      createdAt: Date.now(),
+      completedAt: null
+    });
+  }
+  saveTodoItems();
+  closeTodoForm();
+  renderTodoView();
+  showToast(editingTodoId ? '待办已更新' : '待办已创建');
+}
+
+function setPriority(p) {
+  $$('#priorityToggle .priority-opt').forEach(function(opt) {
+    opt.classList.toggle('selected', opt.dataset.priority === p);
+  });
+}
+
+function getSelectedPriority() {
+  var sel = $('#priorityToggle .priority-opt.selected');
+  return sel ? sel.dataset.priority : 'medium';
+}
+
+function populateCategorySelect(selectedId) {
+  var sel = $('#todoCategorySelect');
+  sel.innerHTML = '<option value="">-- 选择分类 --</option>' +
+    todoCategories.map(function(c) {
+      return '<option value="' + c.id + '"' + (c.id === selectedId ? ' selected' : '') + '>' + escHtml(c.name) + '</option>';
+    }).join('');
+}
+
+// ---- Todo Operations ----
+function completeTodo(todoId) {
+  var item = todoItems.find(function(t) { return t.id === todoId; });
+  if (!item) return;
+  item.status = 'completed';
+  item.completedAt = Date.now();
+  saveTodoItems();
+  playDing();
+  renderTodoView();
+  showToast('已完成：' + item.title);
+}
+
+function restoreTodo(todoId) {
+  var item = todoItems.find(function(t) { return t.id === todoId; });
+  if (!item) return;
+  item.status = 'pending';
+  item.completedAt = null;
+  saveTodoItems();
+  playUndo();
+  renderTodoView();
+  showToast('已恢复：' + item.title);
+}
+
+function openPostpone(todoId) {
+  postponeTodoId = todoId;
+  var item = todoItems.find(function(t) { return t.id === todoId; });
+  if (!item) return;
+  if (item.deadline) {
+    var d = new Date(item.deadline);
+    $('#postponeDateInput').value = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+    $('#postponeTimeInput').value = String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+  } else {
+    $('#postponeDateInput').value = '';
+    $('#postponeTimeInput').value = '';
+  }
+  $('#postponeOverlay').classList.add('show');
+}
+
+function closePostpone() {
+  $('#postponeOverlay').classList.remove('show');
+  postponeTodoId = null;
+}
+
+function savePostpone() {
+  var item = todoItems.find(function(t) { return t.id === postponeTodoId; });
+  if (!item) return;
+  var dateVal = $('#postponeDateInput').value;
+  if (dateVal) {
+    var timeVal = $('#postponeTimeInput').value || '00:00';
+    item.deadline = new Date(dateVal + 'T' + timeVal).toISOString();
+  } else {
+    item.deadline = null;
+  }
+  item.status = 'postponed';
+  saveTodoItems();
+  closePostpone();
+  renderTodoView();
+  showToast('截止时间已更新');
+}
+
+function clearPostponeDeadline() {
+  var item = todoItems.find(function(t) { return t.id === postponeTodoId; });
+  if (!item) return;
+  item.deadline = null;
+  item.status = 'postponed';
+  saveTodoItems();
+  closePostpone();
+  renderTodoView();
+  showToast('截止时间已清除');
+}
+
+function cancelTodo(todoId) {
+  var item = todoItems.find(function(t) { return t.id === todoId; });
+  if (!item) return;
+  $('#confirmText').textContent = '确定要取消「' + item.title + '」吗？';
+  $('#confirmDialog').classList.add('show');
+  confirmCallback = function() {
+    item.status = 'cancelled';
+    saveTodoItems();
+    $('#confirmDialog').classList.remove('show');
+    renderTodoView();
+    showToast('已取消：' + item.title);
+  };
+}
+
+function confirmDeleteTodo(todoId) {
+  var item = todoItems.find(function(t) { return t.id === todoId; });
+  if (!item) return;
+  $('#confirmText').textContent = '确定要删除「' + item.title + '」吗？此操作不可恢复。';
+  $('#confirmDialog').classList.add('show');
+  confirmCallback = function() {
+    todoItems = todoItems.filter(function(t) { return t.id !== todoId; });
+    saveTodoItems();
+    $('#confirmDialog').classList.remove('show');
+    renderTodoView();
+    showToast('待办已删除');
+  };
+}
+
+// ---- Category Management ----
+function openCatManage() {
+  renderCatList();
+  $('#catModalOverlay').classList.add('show');
+}
+
+function closeCatManage() {
+  $('#catModalOverlay').classList.remove('show');
+}
+
+function renderCatList() {
+  $('#catList').innerHTML = todoCategories.map(function(c) {
+    return '<div class="cat-item">' +
+      '<div class="cat-dot" style="background:' + c.color + '"></div>' +
+      '<span class="cat-name">' + escHtml(c.name) + '</span>' +
+      '<div class="cat-actions">' +
+        '<button class="btn-icon cat-edit-btn" data-cat-id="' + c.id + '" style="font-size:0.85rem">✎</button>' +
+        '<button class="btn-icon cat-delete-btn" data-cat-id="' + c.id + '" style="font-size:0.85rem;color:#ef4444">🗑</button>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+
+  $('#catList').onclick = function(e) {
+    var editBtn = e.target.closest('.cat-edit-btn');
+    var deleteBtn = e.target.closest('.cat-delete-btn');
+    if (editBtn) { openCatEdit(editBtn.dataset.catId); }
+    if (deleteBtn) { confirmDeleteCat(deleteBtn.dataset.catId); }
+  };
+}
+
+function openCatEdit(catId) {
+  editingCatId = catId;
+  var cat = todoCategories.find(function(c) { return c.id === catId; });
+  if (!cat) {
+    // New category
+    editingCatId = null;
+    $('#catEditTitle').textContent = '新建分类';
+    $('#catNameInput').value = '';
+    $('#catColorInput').value = '#6366f1';
+    updateCatColorSelection('#6366f1');
+  } else {
+    $('#catEditTitle').textContent = '编辑分类';
+    $('#catNameInput').value = cat.name;
+    $('#catColorInput').value = cat.color;
+    updateCatColorSelection(cat.color);
+  }
+  $('#catEditOverlay').classList.add('show');
+  setTimeout(function() { $('#catNameInput').focus(); }, 350);
+}
+
+function closeCatEdit() {
+  $('#catEditOverlay').classList.remove('show');
+  editingCatId = null;
+}
+
+function saveCat() {
+  var name = $('#catNameInput').value.trim();
+  var color = $('#catColorInput').value;
+  if (!name) { showToast('请输入分类名称'); return; }
+
+  if (editingCatId) {
+    var idx = todoCategories.findIndex(function(c) { return c.id === editingCatId; });
+    if (idx >= 0) { todoCategories[idx].name = name; todoCategories[idx].color = color; }
+  } else {
+    todoCategories.push({
+      id: 'cat_' + Date.now().toString(),
+      name: name,
+      color: color,
+      createdAt: Date.now()
+    });
+  }
+  saveTodoCategories();
+  closeCatEdit();
+  renderCatList();
+  renderTodoView();
+  showToast(editingCatId ? '分类已更新' : '分类已创建');
+}
+
+function confirmDeleteCat(catId) {
+  var cat = todoCategories.find(function(c) { return c.id === catId; });
+  if (!cat) return;
+  var itemCount = todoItems.filter(function(t) { return t.categoryId === catId; }).length;
+  var msg = '确定要删除「' + cat.name + '」分类吗？';
+  if (itemCount > 0) {
+    msg += '\n该分类下有 ' + itemCount + ' 个待办任务，也将一并删除。';
+  }
+  $('#confirmText').textContent = msg;
+  $('#confirmDialog').classList.add('show');
+  confirmCallback = function() {
+    todoItems = todoItems.filter(function(t) { return t.categoryId !== catId; });
+    todoCategories = todoCategories.filter(function(c) { return c.id !== catId; });
+    if (todoFilterCategory === catId) todoFilterCategory = 'all';
+    saveTodoCategories();
+    saveTodoItems();
+    $('#confirmDialog').classList.remove('show');
+    renderCatList();
+    renderTodoView();
+    showToast('分类已删除');
+  };
+}
+
+function updateCatColorSelection(color) {
+  $('#catColorPresets').innerHTML = COLORS.map(function(c) {
+    return '<div class="color-preset' + (c === color ? ' selected' : '') + '" style="background:' + c + '" data-color="' + c + '"></div>';
+  }).join('');
+  $$('#catColorPresets .color-preset').forEach(function(el) {
+    el.onclick = function() {
+      $('#catColorInput').value = el.dataset.color;
+      updateCatColorSelection(el.dataset.color);
+    };
+  });
+}
+
 // ---- Navigation ----
 function switchView(viewName) {
   currentView = viewName;
@@ -1286,6 +1947,7 @@ function switchView(viewName) {
   $$('.nav-item').forEach(function(n) { n.classList.toggle('active', n.dataset.view === viewName); });
   if (viewName === 'viewStats') renderStats();
   if (viewName === 'viewCheckin') renderTasks();
+  if (viewName === 'viewTodo') renderTodoView();
 }
 
 // ---- Event Bindings ----
@@ -1298,6 +1960,7 @@ function bindEvents() {
     e.currentTarget.appendChild(ripple);
     setTimeout(function() { ripple.remove(); }, 600);
     if (currentView === 'viewCheckin') openAddModal();
+    else if (currentView === 'viewTodo') openTodoForm();
     else switchView('viewCheckin');
   };
 
@@ -1312,6 +1975,17 @@ function bindEvents() {
   $('#confirmDialog').onclick = function(e) { if (e.target === $('#confirmDialog')) { $('#confirmDialog').classList.remove('show'); confirmCallback = null; } };
 
   $('#backfillOverlay').onclick = function(e) { if (e.target === $('#backfillOverlay')) closeBackfill(); };
+  $('#todoModalOverlay').onclick = function(e) { if (e.target === $('#todoModalOverlay')) closeTodoForm(); };
+  $('#todoFormSubmit').onclick = saveTodoItem;
+  $('#catModalOverlay').onclick = function(e) { if (e.target === $('#catModalOverlay')) closeCatManage(); };
+  $('#catAddBtn').onclick = function() { openCatEdit(null); };
+  $('#catEditOverlay').onclick = function(e) { if (e.target === $('#catEditOverlay')) closeCatEdit(); };
+  $('#catEditSubmit').onclick = saveCat;
+  $('#catColorInput').oninput = function() { updateCatColorSelection($('#catColorInput').value); };
+  $('#postponeOverlay').onclick = function(e) { if (e.target === $('#postponeOverlay')) closePostpone(); };
+  $('#postponeSubmit').onclick = savePostpone;
+  $('#postponeClear').onclick = clearPostponeDeadline;
+  $('#priorityToggle').onclick = function(e) { var opt = e.target.closest('.priority-opt'); if (opt) { setPriority(opt.dataset.priority); } };
 
   $('#yearPrev').onclick = function() { statsYear--; renderStats(); };
   $('#yearNext').onclick = function() { statsYear++; renderStats(); };
@@ -1326,6 +2000,10 @@ function bindEvents() {
   document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
       if ($('#confirmDialog').classList.contains('show')) { $('#confirmDialog').classList.remove('show'); confirmCallback = null; }
+      else if ($('#postponeOverlay').classList.contains('show')) closePostpone();
+      else if ($('#catEditOverlay').classList.contains('show')) closeCatEdit();
+      else if ($('#catModalOverlay').classList.contains('show')) closeCatManage();
+      else if ($('#todoModalOverlay').classList.contains('show')) closeTodoForm();
       else if ($('#backfillOverlay').classList.contains('show')) closeBackfill();
       else if ($('#taskModalOverlay').classList.contains('show')) closeTaskModal();
     }
@@ -1346,6 +2024,8 @@ function init() {
   initTheme();
   loadTasks();
   loadHistory();
+  loadTodoCategories();
+  loadTodoItems();
   updateColorSelection('#6366f1');
 
   var now = new Date();
