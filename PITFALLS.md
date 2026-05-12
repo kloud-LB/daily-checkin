@@ -75,33 +75,7 @@ Supabase Dashboard → Settings → API → 复制 **Project URL** 字段（格�
 
 ---
 
-## 3. Supabase Dashboard "Confirm sign up" 开关 UI Bug
-
-### 现象
-
-Supabase Dashboard → Authentication → Notifications → Email → 点击 **"Confirm sign up"** 开关，页面没有切换开关状态，反而弹出空白 HTML body / 无法渲染。
-
-### 问题分析
-
-Supabase Dashboard 是 SPA（React 应用），该开关组件在特定条件下出现前端渲染异常：
-
-- 可能原因 1：浏览器缓存了旧版 Dashboard JS bundle，与新 API 不兼容
-- 可能原因 2：上游 CDN 加载失败导致组件降级为原始 HTML 响应
-- 可能原因 3：特定浏览器（如部分国产浏览器兼容模式）的渲染问题
-
-**根因**：不是配置问题，是 Dashboard 前端渲染 bug。底层 API 并没有出错，只是 UI 无法正常交互。
-
-### 处理方案
-
-| 优先级 | 方案 | 操作 |
-|--------|------|------|
-| A（推荐） | 换浏览器 | 用 Chrome / Edge 无痕模式登录 Dashboard，重试开关操作 |
-| B | 放弃跳过验证 | 正常走邮件验证流程——**一次性操作**，验证后 `persistSession` 自动保持登录，日常使用不需要反复验证 |
-| C | 改 Site URL 后相当于重来 | 如果只需要测试功能，Site URL 配置正确后（见坑 1），重新注册的邮件确认链接应该能正常打开，完成一次验证即可 |
-
----
-
-## 4. RLS 策略未配置导致数据请求返回空
+## 3. RLS 策略未配置导致数据请求返回空
 
 ### 现象
 
@@ -155,46 +129,7 @@ CREATE POLICY "user_own_tasks" ON checkin_tasks
 
 ---
 
-## 5. GitHub API 连接不稳定（中国大陆网络环境）
-
-### 现象
-
-`git push` / `git clone` 间歇性失败：
-
-```
-fatal: unable to access 'https://github.com/...':
-  Failed to connect to github.com port 443 after 21210 ms
-fatal: unable to access 'https://github.com/...':
-  Recv failure: Connection was reset
-```
-
-但同一时刻 `curl https://github.com` 正常返回 200。
-
-### 问题分析
-
-Git 的 HTTP 传输层与 `curl` 使用不同的连接策略：
-
-| 层面 | curl | git |
-|------|------|-----|
-| 连接池 | 每次独立连接 | 复用连接（长连接） |
-| 超时机制 | `--connect-timeout` | 系统级 TCP 超时 |
-| HTTP 版本 | 自适应协商（HTTP/1.1 / HTTP/2） | 默认 HTTP/1.1 |
-
-在中国大陆网络环境下，GitHub 的 TCP 443 端口连接存在周期性丢包和高延迟。`curl` 快速建立-关闭连接的方式成功率更高；Git 的持久连接容易在中间路由节点被断开。
-
-**根因**：国际出口网络的间歇性 TCP 重置，非代码或配置问题。
-
-### 处理方案
-
-| 优先级 | 方案 | 操作 |
-|--------|------|------|
-| A | 重试 | `git push` 失败后等待 10 秒重试，通常 2-5 次内成功 |
-| B | 换 SSH | 配置 SSH Key，使用 `git@github.com:kloud-LB/daily-checkin.git` SSH 协议比 HTTPS 稳定性更高 |
-| C | 避免高峰期 | 避开国内晚间高峰时段推送 |
-
----
-
-## 6. 路径体系混用（Windows + Git Bash）
+## 4. 路径体系混用（Windows + Git Bash）
 
 ### 现象
 
@@ -234,7 +169,7 @@ cd "/d/VIBECODING/daily-checkin"
 
 ---
 
-## 7. localStorage 新旧 Key 并存导致混淆
+## 5. localStorage 新旧 Key 并存导致混淆
 
 ### 现象
 
