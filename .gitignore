@@ -1,4 +1,4 @@
-﻿# IDE
+# IDE
 .vscode/
 .idea/
 *.swp
@@ -10,3 +10,6 @@ Thumbs.db
 
 # Dependencies (none for this project, just in case)
 node_modules/
+
+# Temp / extracted files
+js/_full_js_temp.txt

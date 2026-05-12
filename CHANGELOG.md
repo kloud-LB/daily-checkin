@@ -1,5 +1,62 @@
 # 更新日志
 
+## v2.0.0 (2026-05-12)
+
+### 重大更新：前端 + Supabase 后端全栈架构
+
+项目从单文件 localStorage 应用升级为前端 + 后端的全栈架构，使用 [Supabase](https://supabase.com) 作为后端服务。
+
+#### 架构变更
+
+- **代码拆分**：单文件 `index.html`（2053行）→ 模块化结构（`index.html` App Shell + 9 个 JS 模块 + 1 个 CSS 文件）
+- **数据存储**：localStorage → Supabase PostgreSQL（Row Level Security 隔离用户数据）
+- **用户系统**：新增邮箱登录/注册（Supabase Auth）
+
+#### 文件结构
+
+```
+daily-checkin/
+├── index.html              # App Shell（~210行）
+├── css/app.css             # 样式（500行，从 v1 提取）
+├── js/
+│   ├── app.js              # 入口：常量、状态、主题、音效、路由
+│   ├── supabase-client.js  # Supabase 客户端初始化
+│   ├── offline.js          # 离线缓存层（localStorage 镜像 + 操作队列）
+│   ├── auth.js             # 邮箱登录/注册/登出
+│   ├── checkin.js          # 打卡模块（Supabase 数据层 + 渲染）
+│   ├── todo.js             # 待办模块（Supabase 数据层 + 渲染）
+│   ├── stats.js            # 统计热力图模块
+│   └── migrate.js          # v1.x 数据迁移工具
+├── supabase/schema.sql     # 数据库建表 + RLS 策略
+└── CHANGELOG.md
+```
+
+#### 新增特性
+
+- **多端同步**：同一账号在任意设备登录后数据自动同步
+- **数据持久化**：清除浏览器缓存后重新登录即可恢复数据
+- **离线缓存**：断网时自动降级到 localStorage，网络恢复后自动同步
+- **v1 迁移**：登录后可导入 v1.x JSON 备份文件，迁移到云端
+- **数据安全**：Supabase RLS 确保每个用户只能访问自己的数据
+
+#### 用户视角：v1.x vs v2.0
+
+| 场景 | v1.x | v2.0 |
+|------|------|------|
+| 首次使用 | 打开文件即用 | 注册邮箱（30秒）→ 开始使用 |
+| 换设备 | 导出 JSON → 传输 → 导入 | 登录同一邮箱 → 数据自动出现 |
+| 断网时 | 正常使用 | 正常使用，显示"离线"标记 |
+| 网络恢复 | — | 自动同步离线操作到云端 |
+| 清除缓存 | 数据全部丢失 | 重新登录后从云端拉回 |
+
+#### 部署方式
+
+- 推荐使用 GitHub Pages 或 Vercel 托管静态文件
+- 需要在 `js/supabase-client.js` 中配置 Supabase 项目凭证
+- 在 Supabase SQL Editor 中运行 `supabase/schema.sql`
+
+---
+
 ## v1.3.0 (2026-05-12)
 
 ### 新增：待办事项模块
@@ -150,5 +207,5 @@
 | v1.1.0 | ✅ 已发布 | 数据导入/导出 |
 | v1.2.0 | ✅ 已发布 | 撤销打卡 |
 | v1.3.0 | ✅ 已发布 | 待办事项模块（两级分类、优先级、截止时间） |
-| v1.4.0 | 🔜 规划中 | Supabase 云同步 + 邮箱登录（多端自动同步） |
-| v1.5.0 | 🔜 规划中 | 打卡提醒通知 / 桌面 PWA 安装 / 统计周报 / 待办统计面板 |
+| v2.0.0 | 🚧 开发中 | Supabase 全栈架构（多端同步、邮箱登录、离线缓存） |
+| v2.1.0 | 🔜 规划中 | 打卡提醒通知 / 桌面 PWA 安装 / 待办统计面板 |
