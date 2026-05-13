@@ -41,12 +41,15 @@ function fmtDate(str) {
 }
 function weekday(str) { return DAY_LABELS[new Date(str).getDay()]; }
 
+function escHtml(s) {
+  var d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
 // ---- Export / Import (v2: exports from local cache) ----
 function exportData() {
-  var data = { tasks: tasks, history: history, exportDate: todayStr() };
-  // Also include todo data
-  data.todoCategories = todoCategories;
-  data.todoItems = todoItems;
+  var data = dbExportAll();
   var blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
   var url = URL.createObjectURL(blob);
   var a = document.createElement('a');
@@ -151,9 +154,7 @@ function switchView(viewName) {
   $$('.view').forEach(function(v) { v.classList.remove('active'); });
   $('#' + viewName).classList.add('active');
   $$('.nav-item').forEach(function(n) { n.classList.toggle('active', n.dataset.view === viewName); });
-  if (viewName === 'viewStats') renderStats();
-  if (viewName === 'viewCheckin') renderTasks();
-  if (viewName === 'viewTodo') renderTodoView();
+  dbRenderView(viewName);
 }
 
 // ---- Event Bindings ----
@@ -165,49 +166,24 @@ function bindEvents() {
     ripple.className = 'ripple';
     e.currentTarget.appendChild(ripple);
     setTimeout(function() { ripple.remove(); }, 600);
-    if (currentView === 'viewCheckin') openAddModal();
-    else if (currentView === 'viewTodo') openTodoForm();
-    else switchView('viewCheckin');
+    for (var modId in __modules) {
+      var mod = __modules[modId];
+      if (mod.views && mod.views.indexOf(currentView) !== -1 && mod.fabClick) {
+        mod.fabClick();
+        return;
+      }
+    }
+    switchView('viewCheckin');
   };
 
   $$('.nav-item').forEach(function(n) { n.onclick = function() { switchView(n.dataset.view); }; });
 
-  // Check-in modal
-  $('#taskModalOverlay').onclick = function(e) { if (e.target === $('#taskModalOverlay')) closeTaskModal(); };
-  $('#taskFormSubmit').onclick = saveTask;
-  $('#taskColorInput').oninput = function() { updateColorSelection($('#taskColorInput').value); };
-
-  // Todo modal
-  $('#todoModalOverlay').onclick = function(e) { if (e.target === $('#todoModalOverlay')) closeTodoForm(); };
-  $('#todoFormSubmit').onclick = saveTodoItemForm;
-  $$('#priorityToggle .priority-opt').forEach(function(b) {
-    b.onclick = function() {
-      $$('#priorityToggle .priority-opt').forEach(function(x) { x.classList.remove('selected'); });
-      b.classList.add('selected');
-    };
-  });
-
-  // Category modals
-  $('#catModalOverlay').onclick = function(e) { if (e.target === $('#catModalOverlay')) closeCatManager(); };
-  $('#catAddBtn').onclick = function() { openCatEdit(); };
-  $('#catEditOverlay').onclick = function(e) { if (e.target === $('#catEditOverlay')) closeCatEdit(); };
-  $('#catEditSubmit').onclick = saveCatEdit;
-  $('#catColorInput').oninput = function() { updateCatColorSelection($('#catColorInput').value); };
-
-  // Postpone
-  $('#postponeOverlay').onclick = function(e) { if (e.target === $('#postponeOverlay')) closePostpone(); };
-  $('#postponeSubmit').onclick = function() { applyPostpone(false); };
-  $('#postponeClear').onclick = function() { applyPostpone(true); };
-
-  // Confirm dialog
+  // Confirm dialog (shared)
   $('#confirmCancel').onclick = function() { $('#confirmDialog').classList.remove('show'); confirmCallback = null; };
   $('#confirmOk').onclick = function() { if (confirmCallback) confirmCallback(); };
   $('#confirmDialog').onclick = function(e) {
     if (e.target === $('#confirmDialog')) { $('#confirmDialog').classList.remove('show'); confirmCallback = null; }
   };
-
-  // Backfill
-  $('#backfillOverlay').onclick = function(e) { if (e.target === $('#backfillOverlay')) closeBackfill(); };
 
   // Stats year switcher
   $('#yearPrev').onclick = function() { statsYear--; renderStats(); };
@@ -220,13 +196,10 @@ function bindEvents() {
   // Keyboard
   document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
-      if ($('#confirmDialog').classList.contains('show')) { $('#confirmDialog').classList.remove('show'); confirmCallback = null; }
-      else if ($('#backfillOverlay').classList.contains('show')) closeBackfill();
-      else if ($('#taskModalOverlay').classList.contains('show')) closeTaskModal();
-      else if ($('#todoModalOverlay').classList.contains('show')) closeTodoForm();
-      else if ($('#catModalOverlay').classList.contains('show')) closeCatManager();
-      else if ($('#catEditOverlay').classList.contains('show')) closeCatEdit();
-      else if ($('#postponeOverlay').classList.contains('show')) closePostpone();
+      if ($('#confirmDialog').classList.contains('show')) { $('#confirmDialog').classList.remove('show'); confirmCallback = null; return; }
+      for (var modId in __modules) {
+        if (__modules[modId].escape) __modules[modId].escape();
+      }
     }
   });
 
@@ -251,29 +224,23 @@ async function init() {
   if (hd) hd.textContent = now.getFullYear() + '年' + (now.getMonth()+1) + '月' + now.getDate() + '日 周' + DAY_LABELS[now.getDay()];
 
   bindEvents();
+  bindModuleEvents();
 
-  // Check auth state
+  // Check auth state — onUserReady will handle data loading via dbLoadAll
   var loggedIn = await initAuth();
-  if (!loggedIn) return; // Auth UI shown, wait for login
-
-  // Load data from Supabase (online) or cache (offline)
-  await loadTasksOnline();
-  await loadHistoryOnline();
-  await loadTodoCategoriesOnline();
-  await loadTodoItemsOnline();
-
-  // Initial render
-  renderTasks();
-  // Pre-render todo pills for nav visibility
-  renderTodoPills();
-
-  // If network is available, ensure caches are fresh
-  if (isOnline && authUser) {
-    syncOfflineQueue();
-  }
+  if (!loggedIn) return;
 
   // Bind migration import
   bindMigrateImport();
+}
+
+function bindModuleEvents() {
+  for (var modId in __modules) {
+    var mod = __modules[modId];
+    if (typeof mod.bindEvents === 'function') {
+      try { mod.bindEvents(); } catch(e) {}
+    }
+  }
 }
 
 document.addEventListener('DOMContentLoaded', init);

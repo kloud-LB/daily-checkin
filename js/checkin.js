@@ -17,14 +17,14 @@ async function loadTasksOnline() {
       var res = await sb.from('checkin_tasks').select('*').eq('user_id', uid).order('created_at');
       if (!res.error) {
         tasks = res.data.map(function(r) { return { id: r.id.toString(), name: r.name, targetCount: r.target_count, color: r.color, createdAt: new Date(r.created_at).getTime() }; });
-        if (uid) cacheSetTasks(uid, tasks);
+        if (uid) dbCacheSave(uid, 'checkin_cache_tasks', tasks);
         return;
       }
     } catch(e) { /* fallback */ }
   }
   // Offline: use cache
   if (authUser && typeof cacheGetTasks === 'function') {
-    var cached = cacheGetTasks(authUser.id);
+    var cached = dbCacheLoad(authUser.id, 'checkin_cache_tasks');
     if (cached) { tasks = cached; return; }
   }
   tasks = [];
@@ -36,19 +36,19 @@ async function saveTaskToServer(task) {
       var sb = getSupabase();
       var uid = authUser.id;
       await sb.from('checkin_tasks').upsert({ id: parseInt(task.id), user_id: uid, name: task.name, target_count: task.targetCount, color: task.color, created_at: new Date(task.createdAt).toISOString() });
-    } catch(e) { queuePush({ type: 'updateTask', id: parseInt(task.id), name: task.name, targetCount: task.targetCount, color: task.color }); }
+    } catch(e) { queuePush({ _module: 'checkin', type: 'updateTask', id: parseInt(task.id), name: task.name, targetCount: task.targetCount, color: task.color }); }
   } else {
-    queuePush({ type: 'updateTask', id: parseInt(task.id), name: task.name, targetCount: task.targetCount, color: task.color });
+    queuePush({ _module: 'checkin', type: 'updateTask', id: parseInt(task.id), name: task.name, targetCount: task.targetCount, color: task.color });
   }
-  if (authUser) cacheSetTasks(authUser.id, tasks);
+  if (authUser) dbCacheSave(authUser.id, 'checkin_cache_tasks', tasks);
 }
 
 async function deleteTaskFromServer(taskId) {
   if (isOnline) {
     try { await getSupabase().from('checkin_tasks').delete().eq('id', parseInt(taskId)).eq('user_id', authUser.id); }
-    catch(e) { queuePush({ type: 'deleteTask', id: parseInt(taskId) }); }
-  } else { queuePush({ type: 'deleteTask', id: parseInt(taskId) }); }
-  if (authUser) cacheSetTasks(authUser.id, tasks);
+    catch(e) { queuePush({ _module: 'checkin', type: 'deleteTask', id: parseInt(taskId) }); }
+  } else { queuePush({ _module: 'checkin', type: 'deleteTask', id: parseInt(taskId) }); }
+  if (authUser) dbCacheSave(authUser.id, 'checkin_cache_tasks', tasks);
 }
 
 async function loadHistoryOnline() {
@@ -63,13 +63,13 @@ async function loadHistoryOnline() {
           if (!history[r.date]) history[r.date] = {};
           history[r.date][r.task_id] = { count: r.count, completedAt: new Date(r.completed_at).getTime() };
         });
-        if (uid) cacheSetHistory(uid, history);
+        if (uid) dbCacheSave(uid, 'checkin_cache_history', history);
         return;
       }
     } catch(e) { /* fallback */ }
   }
   if (authUser && typeof cacheGetHistory === 'function') {
-    var cached = cacheGetHistory(authUser.id);
+    var cached = dbCacheLoad(authUser.id, 'checkin_cache_history');
     if (cached) { history = cached; return; }
   }
   history = {};
@@ -79,19 +79,19 @@ async function saveCheckinEntry(taskId, dateStr, count, ts) {
   if (isOnline) {
     try {
       await getSupabase().from('checkin_history').upsert({ user_id: authUser.id, task_id: parseInt(taskId), date: dateStr, count: count, completed_at: new Date(ts).toISOString() }, { onConflict: 'user_id,task_id,date' });
-    } catch(e) { queuePush({ type: 'checkin', taskId: parseInt(taskId), date: dateStr, count: count, timestamp: ts }); }
+    } catch(e) { queuePush({ _module: 'checkin', type: 'checkin', taskId: parseInt(taskId), date: dateStr, count: count, timestamp: ts }); }
   } else {
-    queuePush({ type: 'checkin', taskId: parseInt(taskId), date: dateStr, count: count, timestamp: ts });
+    queuePush({ _module: 'checkin', type: 'checkin', taskId: parseInt(taskId), date: dateStr, count: count, timestamp: ts });
   }
-  if (authUser) cacheSetHistory(authUser.id, history);
+  if (authUser) dbCacheSave(authUser.id, 'checkin_cache_history', history);
 }
 
 async function deleteCheckinEntry(taskId, dateStr) {
   if (isOnline) {
     try { await getSupabase().from('checkin_history').delete().eq('user_id', authUser.id).eq('task_id', parseInt(taskId)).eq('date', dateStr); }
-    catch(e) { queuePush({ type: 'undoCheckin', taskId: parseInt(taskId), date: dateStr }); }
-  } else { queuePush({ type: 'undoCheckin', taskId: parseInt(taskId), date: dateStr }); }
-  if (authUser) cacheSetHistory(authUser.id, history);
+    catch(e) { queuePush({ _module: 'checkin', type: 'undoCheckin', taskId: parseInt(taskId), date: dateStr }); }
+  } else { queuePush({ _module: 'checkin', type: 'undoCheckin', taskId: parseInt(taskId), date: dateStr }); }
+  if (authUser) dbCacheSave(authUser.id, 'checkin_cache_history', history);
 }
 
 // ---- Helpers ----
@@ -118,12 +118,6 @@ function sortTasksForDisplay(list) {
     return aTime - bTime;
   });
   return uncompleted.concat(completed);
-}
-
-function escHtml(s) {
-  var d = document.createElement('div');
-  d.textContent = s;
-  return d.innerHTML;
 }
 
 // ---- Render ----
@@ -321,3 +315,126 @@ function updateColorSelection(color) {
     };
   });
 }
+
+// ---- Module Registration ----
+var checkinState = { tasks: [], history: [] };
+
+DataModule({
+  id: 'checkin',
+  state: checkinState,
+  views: ['viewCheckin'],
+  tables: [
+    {
+      cacheKey: 'checkin_cache_tasks',
+      tableName: 'checkin_tasks',
+      orderBy: 'created_at',
+      stateProp: 'tasks',
+      transform: function(rows) {
+        return rows.map(function(r) {
+          return {
+            id: r.id.toString(),
+            name: r.name,
+            targetCount: r.target_count,
+            color: r.color,
+            createdAt: new Date(r.created_at).getTime()
+          };
+        });
+      }
+    },
+    {
+      cacheKey: 'checkin_cache_history',
+      tableName: 'checkin_history',
+      orderBy: null,
+      stateProp: 'history',
+      transform: function(rows) {
+        var h = {};
+        rows.forEach(function(r) {
+          if (!h[r.date]) h[r.date] = {};
+          h[r.date][r.task_id] = {
+            count: r.count,
+            completedAt: new Date(r.completed_at).getTime()
+          };
+        });
+        return h;
+      }
+    }
+  ],
+  actions: {
+    checkin: async function(sb, uid, a) {
+      await sb.from('checkin_history').upsert({
+        user_id: uid, task_id: a.taskId, date: a.date,
+        count: a.count, completed_at: new Date(a.timestamp).toISOString()
+      }, { onConflict: 'user_id,task_id,date' });
+    },
+    createTask: async function(sb, uid, a) {
+      await sb.from('checkin_tasks').upsert({
+        id: a.id, user_id: uid, name: a.name,
+        target_count: a.targetCount, color: a.color,
+        created_at: new Date(a.createdAt).toISOString()
+      });
+    },
+    updateTask: async function(sb, uid, a) {
+      await sb.from('checkin_tasks').update({
+        name: a.name, target_count: a.targetCount, color: a.color
+      }).eq('id', a.id).eq('user_id', uid);
+    },
+    deleteTask: async function(sb, uid, a) {
+      await sb.from('checkin_tasks').delete().eq('id', a.id).eq('user_id', uid);
+    },
+    undoCheckin: async function(sb, uid, a) {
+      await sb.from('checkin_history').delete()
+        .eq('user_id', uid).eq('task_id', a.taskId).eq('date', a.date);
+    }
+  },
+  init: function() {
+    tasks = checkinState.tasks;
+    history = checkinState.history;
+    renderTasks();
+    renderStats();
+  },
+  render: function(viewName) {
+    if (viewName === 'viewCheckin') renderTasks();
+  },
+  fabClick: function() { openAddModal(); },
+  escape: function() {
+    if (document.getElementById('taskModalOverlay').classList.contains('show')) closeTaskModal();
+    if (document.getElementById('backfillOverlay').classList.contains('show')) closeBackfill();
+  },
+  bindEvents: function() {
+    document.getElementById('taskModalOverlay').onclick = function(e) { if (e.target === document.getElementById('taskModalOverlay')) closeTaskModal(); };
+    document.getElementById('taskFormSubmit').onclick = saveTask;
+    document.getElementById('taskColorInput').oninput = function() { updateColorSelection(document.getElementById('taskColorInput').value); };
+    document.getElementById('backfillOverlay').onclick = function(e) { if (e.target === document.getElementById('backfillOverlay')) closeBackfill(); };
+  },
+  migrate: async function(data, sb, uid) {
+    var inserted = 0, errors = 0;
+    if (data.tasks) for (var i = 0; i < data.tasks.length; i++) {
+      var t = data.tasks[i];
+      var res = await sb.from('checkin_tasks').upsert({
+        id: parseInt(t.id) || (Date.now() + i), user_id: uid, name: t.name,
+        target_count: t.targetCount || 1, color: t.color || '#6366f1',
+        created_at: new Date(t.createdAt || Date.now()).toISOString()
+      });
+      if (res.error) errors++; else inserted++;
+    }
+    if (data.history) {
+      var dates = Object.keys(data.history);
+      for (var d = 0; d < dates.length; d++) {
+        var dayData = data.history[dates[d]];
+        for (var tid in dayData) {
+          if (!dayData.hasOwnProperty(tid)) continue;
+          var h = dayData[tid];
+          var res = await sb.from('checkin_history').upsert({
+            user_id: uid, task_id: parseInt(tid), date: dates[d],
+            count: h.count || 1, completed_at: new Date(h.completedAt || Date.now()).toISOString()
+          }, { onConflict: 'user_id,task_id,date' });
+          if (res.error) errors++; else inserted++;
+        }
+      }
+    }
+    return { inserted: inserted, errors: errors };
+  },
+  export: function() {
+    return { tasks: checkinState.tasks, history: checkinState.history };
+  }
+});

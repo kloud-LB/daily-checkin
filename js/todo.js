@@ -20,13 +20,13 @@ async function loadTodoCategoriesOnline() {
       var res = await sb.from('todo_categories').select('*').eq('user_id', uid).order('created_at');
       if (!res.error && res.data.length > 0) {
         todoCategories = res.data.map(function(r) { return { id: r.id, name: r.name, color: r.color, createdAt: new Date(r.created_at).getTime() }; });
-        if (uid) cacheSetTodoCategories(uid, todoCategories);
+        if (uid) dbCacheSave(uid, 'checkin_cache_todo_categories', todoCategories);
         return;
       }
     } catch(e) { /* fallback */ }
   }
   if (authUser && typeof cacheGetTodoCategories === 'function') {
-    var cached = cacheGetTodoCategories(authUser.id);
+    var cached = dbCacheLoad(authUser.id, 'checkin_cache_todo_categories');
     if (cached) { todoCategories = cached; return; }
   }
   // Seed defaults
@@ -37,23 +37,23 @@ async function loadTodoCategoriesOnline() {
       try { await getSupabase().from('todo_categories').upsert({ id: c.id, user_id: authUser.id, name: c.name, color: c.color, created_at: new Date(0).toISOString() }); } catch(e) {}
     }
   }
-  if (authUser) cacheSetTodoCategories(authUser.id, todoCategories);
+  if (authUser) dbCacheSave(authUser.id, 'checkin_cache_todo_categories', todoCategories);
 }
 
 async function saveCategoryToServer(cat) {
   if (isOnline) {
     try { await getSupabase().from('todo_categories').upsert({ id: cat.id, user_id: authUser.id, name: cat.name, color: cat.color, created_at: new Date(cat.createdAt).toISOString() }); }
-    catch(e) { queuePush({ type: 'updateCategory', id: cat.id, name: cat.name, color: cat.color }); }
-  } else { queuePush({ type: 'updateCategory', id: cat.id, name: cat.name, color: cat.color }); }
-  if (authUser) cacheSetTodoCategories(authUser.id, todoCategories);
+    catch(e) { queuePush({ _module: 'todo', type: 'updateCategory', id: cat.id, name: cat.name, color: cat.color }); }
+  } else { queuePush({ _module: 'todo', type: 'updateCategory', id: cat.id, name: cat.name, color: cat.color }); }
+  if (authUser) dbCacheSave(authUser.id, 'checkin_cache_todo_categories', todoCategories);
 }
 
 async function deleteCategoryFromServer(catId) {
   if (isOnline) {
     try { await getSupabase().from('todo_categories').delete().eq('id', catId).eq('user_id', authUser.id); }
-    catch(e) { queuePush({ type: 'deleteCategory', id: catId }); }
-  } else { queuePush({ type: 'deleteCategory', id: catId }); }
-  if (authUser) cacheSetTodoCategories(authUser.id, todoCategories);
+    catch(e) { queuePush({ _module: 'todo', type: 'deleteCategory', id: catId }); }
+  } else { queuePush({ _module: 'todo', type: 'deleteCategory', id: catId }); }
+  if (authUser) dbCacheSave(authUser.id, 'checkin_cache_todo_categories', todoCategories);
 }
 
 async function loadTodoItemsOnline() {
@@ -64,13 +64,13 @@ async function loadTodoItemsOnline() {
       var res = await sb.from('todo_items').select('*').eq('user_id', uid).order('created_at');
       if (!res.error) {
         todoItems = res.data.map(function(r) { return { id: r.id.toString(), categoryId: r.category_id, title: r.title, description: r.description || '', deadline: r.deadline || null, priority: r.priority, status: r.status, createdAt: new Date(r.created_at).getTime(), completedAt: r.completed_at ? new Date(r.completed_at).getTime() : null }; });
-        if (uid) cacheSetTodoItems(uid, todoItems);
+        if (uid) dbCacheSave(uid, 'checkin_cache_todo_items', todoItems);
         return;
       }
     } catch(e) { /* fallback */ }
   }
   if (authUser && typeof cacheGetTodoItems === 'function') {
-    var cached = cacheGetTodoItems(authUser.id);
+    var cached = dbCacheLoad(authUser.id, 'checkin_cache_todo_items');
     if (cached) { todoItems = cached; return; }
   }
   todoItems = [];
@@ -81,20 +81,20 @@ async function saveTodoItemToServer(item) {
     try {
       await getSupabase().from('todo_items').upsert({ id: parseInt(item.id), user_id: authUser.id, category_id: item.categoryId, title: item.title, description: item.description || '', deadline: item.deadline || null, priority: item.priority, status: item.status, created_at: new Date(item.createdAt).toISOString(), completed_at: item.completedAt ? new Date(item.completedAt).toISOString() : null });
     } catch(e) {
-      queuePush({ type: 'updateTodo', id: parseInt(item.id), title: item.title, description: item.description, deadline: item.deadline, priority: item.priority, categoryId: item.categoryId, status: item.status, completedAt: item.completedAt });
+      queuePush({ _module: 'todo', type: 'updateTodo', id: parseInt(item.id), title: item.title, description: item.description, deadline: item.deadline, priority: item.priority, categoryId: item.categoryId, status: item.status, completedAt: item.completedAt });
     }
   } else {
-    queuePush({ type: 'updateTodo', id: parseInt(item.id), title: item.title, description: item.description, deadline: item.deadline, priority: item.priority, categoryId: item.categoryId, status: item.status, completedAt: item.completedAt });
+    queuePush({ _module: 'todo', type: 'updateTodo', id: parseInt(item.id), title: item.title, description: item.description, deadline: item.deadline, priority: item.priority, categoryId: item.categoryId, status: item.status, completedAt: item.completedAt });
   }
-  if (authUser) cacheSetTodoItems(authUser.id, todoItems);
+  if (authUser) dbCacheSave(authUser.id, 'checkin_cache_todo_items', todoItems);
 }
 
 async function deleteTodoItemFromServer(todoId) {
   if (isOnline) {
     try { await getSupabase().from('todo_items').delete().eq('id', parseInt(todoId)).eq('user_id', authUser.id); }
-    catch(e) { queuePush({ type: 'deleteTodo', id: parseInt(todoId) }); }
-  } else { queuePush({ type: 'deleteTodo', id: parseInt(todoId) }); }
-  if (authUser) cacheSetTodoItems(authUser.id, todoItems);
+    catch(e) { queuePush({ _module: 'todo', type: 'deleteTodo', id: parseInt(todoId) }); }
+  } else { queuePush({ _module: 'todo', type: 'deleteTodo', id: parseInt(todoId) }); }
+  if (authUser) dbCacheSave(authUser.id, 'checkin_cache_todo_items', todoItems);
 }
 
 // ---- Helpers ----
@@ -514,3 +514,145 @@ async function confirmDeleteCategory(catId) {
   openCatManager(); renderTodoView();
   showToast('分类「' + cat.name + '」已删除，任务已迁移');
 }
+
+// ---- Module Registration ----
+var todoState = { todoCategories: [], todoItems: [] };
+
+DataModule({
+  id: 'todo',
+  state: todoState,
+  views: ['viewTodo'],
+  tables: [
+    {
+      cacheKey: 'checkin_cache_todo_categories',
+      tableName: 'todo_categories',
+      orderBy: 'created_at',
+      stateProp: 'todoCategories',
+      transform: function(rows) {
+        return rows.map(function(r) {
+          return { id: r.id, name: r.name, color: r.color, createdAt: new Date(r.created_at).getTime() };
+        });
+      }
+    },
+    {
+      cacheKey: 'checkin_cache_todo_items',
+      tableName: 'todo_items',
+      orderBy: 'created_at',
+      stateProp: 'todoItems',
+      transform: function(rows) {
+        return rows.map(function(r) {
+          return {
+            id: r.id.toString(), categoryId: r.category_id,
+            title: r.title, description: r.description || '',
+            deadline: r.deadline || null, priority: r.priority,
+            status: r.status, createdAt: new Date(r.created_at).getTime(),
+            completedAt: r.completed_at ? new Date(r.completed_at).getTime() : null
+          };
+        });
+      }
+    }
+  ],
+  actions: {
+    createTodo: async function(sb, uid, a) {
+      await sb.from('todo_items').upsert({
+        id: a.id, user_id: uid, category_id: a.categoryId || null,
+        title: a.title, description: a.description || '',
+        deadline: a.deadline || null, priority: a.priority || 'medium',
+        status: a.status || 'pending', created_at: new Date(a.createdAt).toISOString()
+      });
+    },
+    updateTodo: async function(sb, uid, a) {
+      await sb.from('todo_items').update({
+        title: a.title, description: a.description, deadline: a.deadline,
+        priority: a.priority, category_id: a.categoryId, status: a.status,
+        completed_at: a.completedAt ? new Date(a.completedAt).toISOString() : null
+      }).eq('id', a.id).eq('user_id', uid);
+    },
+    deleteTodo: async function(sb, uid, a) {
+      await sb.from('todo_items').delete().eq('id', a.id).eq('user_id', uid);
+    },
+    createCategory: async function(sb, uid, a) {
+      await sb.from('todo_categories').upsert({
+        id: a.id, user_id: uid, name: a.name, color: a.color,
+        created_at: new Date(a.createdAt).toISOString()
+      });
+    },
+    updateCategory: async function(sb, uid, a) {
+      await sb.from('todo_categories').update({
+        name: a.name, color: a.color
+      }).eq('id', a.id).eq('user_id', uid);
+    },
+    deleteCategory: async function(sb, uid, a) {
+      await sb.from('todo_categories').delete().eq('id', a.id).eq('user_id', uid);
+    }
+  },
+  init: function() {
+    todoCategories = todoState.todoCategories;
+    todoItems = todoState.todoItems;
+    // Seed default categories if empty
+    if (todoCategories.length === 0 && isOnline && authUser) {
+      todoCategories = JSON.parse(JSON.stringify(DEFAULT_CATEGORIES));
+      for (var i = 0; i < todoCategories.length; i++) {
+        var c = todoCategories[i];
+        getSupabase().from('todo_categories').upsert({
+          id: c.id, user_id: authUser.id, name: c.name,
+          color: c.color, created_at: new Date(0).toISOString()
+        }).catch(function(){});
+      }
+      dbCacheSave(authUser.id, 'checkin_cache_todo_categories', todoCategories);
+      todoState.todoCategories = todoCategories;
+    }
+    renderTodoView();
+  },
+  render: function(viewName) {
+    if (viewName === 'viewTodo') renderTodoView();
+  },
+  fabClick: function() { openTodoForm(); },
+  escape: function() {
+    if (document.getElementById('todoModalOverlay').classList.contains('show')) closeTodoForm();
+    if (document.getElementById('catModalOverlay').classList.contains('show')) closeCatManager();
+    if (document.getElementById('catEditOverlay').classList.contains('show')) closeCatEdit();
+    if (document.getElementById('postponeOverlay').classList.contains('show')) closePostpone();
+  },
+  bindEvents: function() {
+    document.getElementById('todoModalOverlay').onclick = function(e) { if (e.target === document.getElementById('todoModalOverlay')) closeTodoForm(); };
+    document.getElementById('todoFormSubmit').onclick = saveTodoItemForm;
+    document.getElementById('catModalOverlay').onclick = function(e) { if (e.target === document.getElementById('catModalOverlay')) closeCatManager(); };
+    document.getElementById('catAddBtn').onclick = function() { openCatEdit(); };
+    document.getElementById('catEditOverlay').onclick = function(e) { if (e.target === document.getElementById('catEditOverlay')) closeCatEdit(); };
+    document.getElementById('catEditSubmit').onclick = saveCatEdit;
+    document.getElementById('catColorInput').oninput = function() { updateCatColorSelection(document.getElementById('catColorInput').value); };
+    document.getElementById('postponeOverlay').onclick = function(e) { if (e.target === document.getElementById('postponeOverlay')) closePostpone(); };
+    document.getElementById('postponeSubmit').onclick = function() { applyPostpone(false); };
+    document.getElementById('postponeClear').onclick = function() { applyPostpone(true); };
+  },
+  migrate: async function(data, sb, uid) {
+    var inserted = 0, errors = 0;
+    var catIds = {};
+    if (data.todoCategories) for (var i = 0; i < data.todoCategories.length; i++) {
+      var c = data.todoCategories[i];
+      var res = await sb.from('todo_categories').upsert({
+        id: c.id, user_id: uid, name: c.name, color: c.color,
+        created_at: new Date(c.createdAt || Date.now()).toISOString()
+      });
+      catIds[c.id] = true;
+      if (res.error) errors++; else inserted++;
+    }
+    if (data.todoItems) for (var j = 0; j < data.todoItems.length; j++) {
+      var item = data.todoItems[j];
+      var res2 = await sb.from('todo_items').upsert({
+        id: parseInt(item.id) || (Date.now() + j + 1000), user_id: uid,
+        category_id: item.categoryId || null, title: item.title,
+        description: item.description || '', deadline: item.deadline || null,
+        priority: item.priority || 'medium', status: item.status || 'pending',
+        created_at: new Date(item.createdAt || Date.now()).toISOString(),
+        completed_at: item.completedAt ? new Date(item.completedAt).toISOString() : null
+      });
+      if (res2.error) errors++; else inserted++;
+    }
+    return { inserted: inserted, errors: errors };
+  },
+  export: function() {
+    return { todoCategories: todoState.todoCategories, todoItems: todoState.todoItems };
+  }
+});

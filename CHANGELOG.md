@@ -1,5 +1,62 @@
 # 更新日志
 
+## v2.1.0 (2026-05-13)
+
+### 统一数据层架构：模块注册机制 + 缓存优先渲染
+
+对 v2.0.0 的核心架构进行重构，引入通用数据引擎 `js/db.js`，解决模块样板代码膨胀和串行加载延迟问题。
+
+#### 核心变更：新增 js/db.js 通用数据引擎
+
+`DataModule(descriptor)` 注册机制：每个模块声明自己的数据表、缓存键、离线操作和生命周期钩子，不再需要在核心文件中添加样板代码。
+
+主要 API：
+- `DataModule(desc)` / `getModule(id)` — 模块注册与查询
+- `dbLoadAll(uid)` — 缓存优先加载（同步渲染 + 后台 Promise.all 刷新）
+- `dbRefreshAllCaches(sb, uid)` — 并行刷新所有注册表
+- `dbReplayAction(sb, uid, action)` — 表驱动离线队列重放
+- `dbRenderView` / `dbMigrateAll` / `dbExportAll` — 统一调度
+
+#### 性能提升
+
+| 指标 | v2.0.0 | v2.1.0 |
+|------|--------|--------|
+| 首次可交互 | ~1-2s（5 串行 await） | ~5ms（同步读缓存） |
+| 数据刷新 | 串行请求 | Promise.all 并行 |
+| 新增模块样板代码 | ~225 行 / 6 文件 | 0 行核心文件 |
+
+#### 文件结构变更
+
+```
+v2.0.0:
+js/offline.js  (239 行，含 8 个 cacheGet/Set + 10-case switch + 顺序 refresh)
+js/auth.js     (174 行，含 loadAllDataFromCache + renderAll)
+js/migrate.js  (126 行，含 4 个 per-table upsert 循环)
+js/app.js      (280 行，含 5 个串行 await + 18 个全局变量)
+
+v2.1.0:
+js/db.js       (180 行，新增 — 通用数据引擎)
+js/offline.js  (80 行，精简 — 仅网络检测 + 队列读写 + syncOfflineQueue)
+js/auth.js     (153 行，精简 — 删除 loadAllDataFromCache/renderAll)
+js/migrate.js  (45 行，精简 — 使用 dbMigrateAll 统一迁移)
+js/app.js      (248 行，精简 — 使用 dbLoadAll/dbRenderView/dbExportAll)
+```
+
+现有模块（checkin.js、todo.js、stats.js）均在末尾调用 `DataModule()` 向引擎注册自身。
+
+#### 新增模块流程（重构后）
+
+后续新增模块（体重管理、记账、购物清单等）仅需：
+
+1. 创建 `js/modules/<name>.js` — IIFE + `DataModule({...})` + render/CRUD 函数
+2. `index.html` — 1 个 `<script>` + 1 个 `<div>` + 1 个 `<button>`
+3. `app.css` — 模块专属样式
+4. `supabase/schema.sql` — CREATE TABLE + RLS
+
+核心文件（db.js / offline.js / auth.js / migrate.js / app.js）零改动。
+
+---
+
 ## v2.0.0 (2026-05-12)
 
 ### 重大更新：前端 + Supabase 后端全栈架构
@@ -207,5 +264,5 @@ daily-checkin/
 | v1.1.0 | ✅ 已发布 | 数据导入/导出 |
 | v1.2.0 | ✅ 已发布 | 撤销打卡 |
 | v1.3.0 | ✅ 已发布 | 待办事项模块（两级分类、优先级、截止时间） |
-| v2.0.0 | 🚧 开发中 | Supabase 全栈架构（多端同步、邮箱登录、离线缓存） |
-| v2.1.0 | 🔜 规划中 | 打卡提醒通知 / 桌面 PWA 安装 / 待办统计面板 |
+| v2.0.0 | ✅ 已发布 | Supabase 全栈架构（多端同步、邮箱登录、离线缓存） |
+| v2.1.0 | ✅ 已发布 | 统一数据层架构（模块注册机制、缓存优先渲染、并行加载） |

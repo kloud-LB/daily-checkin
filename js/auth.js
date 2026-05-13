@@ -143,31 +143,10 @@ async function signOutUser() {
 
 // Stub: called when user is authenticated and ready
 function onUserReady() {
-  // If app.init has already run, reload data; otherwise app.init will handle it
-  if (typeof renderTasks === 'function' && typeof refreshAllCaches === 'function') {
-    refreshAllCaches(getSupabase(), authUser.id).then(function() {
-      loadAllDataFromCache();
-      renderAll();
-    });
+  // Use unified data engine: cache-first load + background refresh
+  if (authUser && typeof dbLoadAll === 'function') {
+    dbLoadAll(authUser.id);
+    // Also replay any pending offline actions
+    if (typeof syncOfflineQueue === 'function') syncOfflineQueue();
   }
-}
-
-function loadAllDataFromCache() {
-  // Called after cache is populated to restore state from local cache
-  if (authUser && typeof cacheGetTasks === 'function') {
-    var t = cacheGetTasks(authUser.id);
-    if (t) tasks = t;
-    var h = cacheGetHistory(authUser.id);
-    if (h) history = h;
-    var c = cacheGetTodoCategories(authUser.id);
-    if (c) todoCategories = c;
-    var i = cacheGetTodoItems(authUser.id);
-    if (i) todoItems = i;
-  }
-}
-
-function renderAll() {
-  if (typeof renderTasks === 'function') renderTasks();
-  if (typeof renderTodoView === 'function') renderTodoView();
-  if (currentView === 'viewStats' && typeof renderStats === 'function') renderStats();
 }

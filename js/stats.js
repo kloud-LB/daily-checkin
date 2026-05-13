@@ -312,3 +312,14 @@ function renderStats() {
   renderOverviewHeatmap();
   renderTaskStats();
 }
+
+// ---- Module Registration ----
+DataModule({
+  id: 'stats',
+  state: {},
+  views: ['viewStats'],
+  tables: [],
+  render: function(viewName) {
+    if (viewName === 'viewStats') renderStats();
+  }
+});
