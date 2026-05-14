@@ -7,7 +7,7 @@ const $ = function(s, p) { return (p || document).querySelector(s); };
 const $$ = function(s, p) { return [].slice.call((p || document).querySelectorAll(s)); };
 
 // ---- Constants ----
-const COLORS = ['#6366f1','#ec4899','#f59e0b','#22c55e','#06b6d4','#ef4444','#8b5cf6','#f97316'];
+const COLORS = ['#6b7db3','#ec4899','#f59e0b','#22c55e','#06b6d4','#ef4444','#8b5cf6','#f97316'];
 const MONTHS = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
 const DAY_LABELS = ['日','一','二','三','四','五','六'];
 const DEBOUNCE_MS = 300;
@@ -15,7 +15,8 @@ const DEBOUNCE_MS = 300;
 // ---- State ----
 let tasks = [];
 let history = {};
-let currentView = 'viewCheckin';
+let currentView = 'viewHome';
+let previousView = null;
 let statsYear = new Date().getFullYear();
 let editingTaskId = null;
 let backfillTaskId = null;
@@ -74,14 +75,14 @@ function initTheme() {
 function applyTheme(theme) {
   document.body.dataset.theme = theme;
   var btn = $('#themeBtn');
-  if (btn) btn.textContent = theme === 'dark' ? '☀️' : '🌙';
+  if (btn) { btn.innerHTML = theme === 'dark' ? '<i class="ri-sun-fill"></i>' : '<i class="ri-moon-fill"></i>'; }
   localStorage.setItem('checkin_theme', theme);
 }
 
 function toggleTheme() {
   var next = document.body.dataset.theme === 'dark' ? 'light' : 'dark';
   applyTheme(next);
-  if (currentView === 'viewStats') renderStats();
+  if (currentView === 'viewCheckin') renderStats();
 }
 
 // ---- Sound ----
@@ -149,18 +150,106 @@ function showCheckmark(card) {
 }
 
 // ---- Navigation ----
-function switchView(viewName) {
+const VIEW_TITLES = {
+  'viewHome': '主页',
+  'viewCheckin': '打卡',
+  'viewTodo': '待办',
+  'viewBookkeeping': '记账',
+  'viewBookkeepingDetail': '记账详情'
+};
+
+function navigateTo(viewName) {
+  previousView = currentView;
   currentView = viewName;
+
+  // Update views
   $$('.view').forEach(function(v) { v.classList.remove('active'); });
-  $('#' + viewName).classList.add('active');
-  $$('.nav-item').forEach(function(n) { n.classList.toggle('active', n.dataset.view === viewName); });
+  var target = document.getElementById(viewName);
+  if (target) target.classList.add('active');
+
+  // Update back button
+  var backBtn = $('#backBtn');
+  if (viewName === 'viewHome') {
+    backBtn.classList.remove('visible');
+  } else {
+    backBtn.classList.add('visible');
+  }
+
+  // Update header title
+  var title = $('#headerTitle');
+  if (title) title.textContent = VIEW_TITLES[viewName] || '';
+
+  // Update FAB visibility
+  updateFabVisibility(viewName);
+
+  // Notify modules to render
   dbRenderView(viewName);
+
+  // Module-specific after-navigate hooks
+  for (var modId in __modules) {
+    var mod = __modules[modId];
+    if (typeof mod.onNavigate === 'function') {
+      try { mod.onNavigate(viewName, previousView); } catch(e) {}
+    }
+  }
+}
+
+function navigateBack() {
+  if (currentView === 'viewHome') return;
+  // If on bookkeeping detail, go back to bookkeeping
+  if (currentView === 'viewBookkeepingDetail') {
+    navigateTo('viewBookkeeping');
+    return;
+  }
+  navigateTo('viewHome');
+}
+
+function updateFabVisibility(viewName) {
+  var fab = $('#fabBtn');
+  if (!fab) return;
+  if (viewName === 'viewHome') {
+    fab.style.display = 'none';
+  } else {
+    fab.style.display = '';
+  }
+}
+
+function switchView(viewName) {
+  // Legacy compatibility — delegate to navigateTo
+  navigateTo(viewName);
 }
 
 // ---- Event Bindings ----
 function bindEvents() {
   $('#themeBtn').onclick = toggleTheme;
+  $('#backBtn').onclick = navigateBack;
 
+  // Home card clicks
+  $$('.home-card').forEach(function(card) {
+    card.onclick = function() {
+      var nav = card.dataset.nav;
+      if (nav === 'checkin') navigateTo('viewCheckin');
+      else if (nav === 'todo') navigateTo('viewTodo');
+      else if (nav === 'bookkeeping') navigateTo('viewBookkeeping');
+      else if (nav === 'weight') showToast('即将上线，敬请期待');
+    };
+    // Ripple effect
+    card.addEventListener('pointerdown', function(e) {
+      if (card.classList.contains('disabled')) return;
+      var ripple = document.createElement('div');
+      ripple.className = 'ripple';
+      ripple.style.cssText = 'position:absolute;border-radius:50%;background:rgba(107,125,179,0.2);animation:ripple 0.6s ease-out forwards;pointer-events:none';
+      var rect = card.getBoundingClientRect();
+      var size = Math.max(rect.width, rect.height);
+      ripple.style.width = ripple.style.height = size + 'px';
+      ripple.style.left = (e.clientX - rect.left - size/2) + 'px';
+      ripple.style.top = (e.clientY - rect.top - size/2) + 'px';
+      card.appendChild(ripple);
+      setTimeout(function() { ripple.remove(); }, 600);
+    });
+  });
+
+  // FAB
   $('#fabBtn').onclick = function(e) {
     var ripple = document.createElement('div');
     ripple.className = 'ripple';
@@ -173,10 +262,9 @@ function bindEvents() {
         return;
       }
     }
-    switchView('viewCheckin');
+    // Default: go home
+    navigateTo('viewHome');
   };
-
-  $$('.nav-item').forEach(function(n) { n.onclick = function() { switchView(n.dataset.view); }; });
 
   // Confirm dialog (shared)
   $('#confirmCancel').onclick = function() { $('#confirmDialog').classList.remove('show'); confirmCallback = null; };
@@ -189,14 +277,15 @@ function bindEvents() {
   $('#yearPrev').onclick = function() { statsYear--; renderStats(); };
   $('#yearNext').onclick = function() { statsYear++; renderStats(); };
 
-  // Export / Import
-  $('#exportBtn').onclick = function() { exportData(); };
-  $('#importBtn').onclick = function() { $('#importFileInput').click(); };
+  // Export / Import — moved to user panel
 
   // Keyboard
   document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
       if ($('#confirmDialog').classList.contains('show')) { $('#confirmDialog').classList.remove('show'); confirmCallback = null; return; }
+      if ($('#userPanelOverlay').classList.contains('show')) { closeUserPanel(); return; }
+      if ($('#avatarPickerOverlay').classList.contains('show')) { closeAvatarPicker(); return; }
+      if ($('#nicknameEditOverlay').classList.contains('show')) { closeNicknameEdit(); return; }
       for (var modId in __modules) {
         if (__modules[modId].escape) __modules[modId].escape();
       }
@@ -208,7 +297,7 @@ function bindEvents() {
     var saved = localStorage.getItem('checkin_theme');
     if (!saved || saved === 'auto') {
       applyTheme(e.matches ? 'dark' : 'light');
-      if (currentView === 'viewStats') renderStats();
+      if (currentView === 'viewCheckin') renderStats();
     }
   });
 }
@@ -223,8 +312,12 @@ async function init() {
   var hd = $('#headerDate');
   if (hd) hd.textContent = now.getFullYear() + '年' + (now.getMonth()+1) + '月' + now.getDate() + '日 周' + DAY_LABELS[now.getDay()];
 
+  // Default: show home
+  navigateTo('viewHome');
+
   bindEvents();
   bindModuleEvents();
+  bindUserPanelEvents();
 
   // Check auth state — onUserReady will handle data loading via dbLoadAll
   var loggedIn = await initAuth();

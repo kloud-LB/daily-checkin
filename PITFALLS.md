@@ -216,3 +216,98 @@ v2.0 不再读写旧 key，但旧 key 不会自动删除。
 ```
 
 > 保留 `checkin_theme`、`checkin_cache_*`、`checkin_offline_queue`，删除其余。
+
+---
+
+## 6. iOS「添加到主屏幕」≠ PWA
+
+### 现象
+
+iOS Safari（以及 Edge iOS 版）提供「分享 → 添加到主屏幕」功能。用户添加后，桌面出现图标，点击打开**全屏无地址栏**。表面体验与 PWA 无异。
+
+### 问题分析
+
+这是 iOS WebKit 的默认行为——任何网页添加到桌面都会获得干净 WebView，**但这不等于 PWA**：
+
+| 能力 | 桌面书签 | 真正 PWA（有 manifest） |
+|------|---------|----------------------|
+| 全屏无地址栏 | ✅ iOS 自动给 | ✅ |
+| 自定义图标 | ❌ 截图或文字首字 | ✅ `apple-touch-icon` 指定 |
+| 自定义启动画面 | ❌ 白屏 | ✅ manifest `background_color` + `theme_color` |
+| 多任务独立卡片 | ❌ 混在 Safari/Edge 里 | ✅ iOS standalone 模式 |
+| 离线打开 | ❌ 断网白屏 | ✅ Service Worker 缓存 |
+| Android 安装提示 | ❌ 无 | ✅ Chrome 主动弹窗引导安装 |
+| Web Push | ❌ | ⚠️ Android ✅，iOS ❌（Apple 至今不支持） |
+
+**根因**：iOS 对"添加到桌面"的优化只是表面功夫——给了一个干净窗口，但没有给 PWA 的工具链（Service Worker、manifest、push）。真正判断 PWA 是否生效要看 `manifest.json` 是否被加载，而非是否有全屏。
+
+### 处理方案
+
+至少加这两行即可解决图标和名称问题（不需要完整 PWA）：
+
+```html
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="apple-mobile-web-app-title" content="打卡">
+```
+
+完整 PWA 见 [CHANGELOG.md v2.2.0 方案](#v220-pwa-方案)。
+
+---
+
+## 7. Supabase Storage 免费额度与照片需求不匹配
+
+### 现象
+
+如果计划在记账或打卡模块中加入拍照功能（如收据/打卡照片），上传后很快发现存储空间耗尽或带宽超标。
+
+### 问题分析
+
+Supabase 免费额度（截至 2026 年）：
+
+| 资源 | 免费额度 | 一张手机照片按 3MB 算 |
+|------|---------|---------------------|
+| 数据库 | 500MB | 结构化数据基本忽略不计 |
+| 对象存储 | **1GB** | ≈ 340 张照片 |
+| 月带宽 | **5GB** | ≈ 1700 次查看（上传+下载） |
+
+一个活跃用户每天拍一张打卡照：一年 1GB 存储打满。10 个用户拍照片 + 查看月消耗轻松超过 5GB 带宽。
+
+**根因**：Supabase 免费套餐面向原型和小项目，不适合图片/UGC 密集型场景。PostgreSQL 存 TEXT 很便宜（几百 KB/人），但存 binary（照片）很贵。
+
+### 处理方案
+
+| 策略 | 存储 | 带宽 | 效果 |
+|------|------|------|------|
+| 前端 Canvas 压缩（200KB quality 0.5） | 15x 省 | 15x 省 | 免费额度撑 50-100 活跃用户 |
+| 缩略图 Supabase + 原图阿里云 OSS | 降低 | 降低 | 国内访问更快 + 成本可控 |
+| 升级 Supabase Pro ($25/月) | 8GB | 50GB | 够小团队用 |
+
+> **建议**：个人或小团队用前端压缩就够。3MB → 200KB 肉眼几乎看不出差异。
+
+---
+
+## 8. 微信/支付宝支付后无法自动通知第三方
+
+### 现象
+
+希望实现「微信/支付宝支付成功后 → 自动弹出记账记录」，但无论在 PWA 还是原生 App 中都无法实现。
+
+### 问题分析
+
+| 环节 | iOS | Android | 原因 |
+|------|-----|---------|------|
+| 读取微信/支付宝通知 | ❌ | ⚠️ NotificationListener（需授权） | iOS 无等效 API |
+| 接收支付回调 URL | ❌ | ❌ | 微信/支付宝不开放此接口 |
+| 读取支付短信 | ❌ | ⚠️ Android 12+ 受限 | 银行短信不含商户名 |
+
+**根因**：微信和支付宝不向第三方应用提供「支付后回调」能力，这是**商业决策**而非技术瓶颈。Apple Pay 有 `PKPaymentAuthorizationViewController`，但微信支付和支付宝没有等效开放接口。
+
+### 处理方案
+
+唯一可行的自动化路径是截图 OCR：
+
+```
+用户支付 → 截图 → 回 App 粘贴截图 → OCR 提取金额 → 选类别
+```
+
+iOS 有 Vision 框架（原生 OCR），Android 可用 ML Kit Text Recognition。PWA 可用 Tesseract.js（纯前端，约 2MB）。准确率针对支付成功页面的规整大字体接近 100%。

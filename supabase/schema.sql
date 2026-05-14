@@ -54,13 +54,38 @@ CREATE INDEX idx_todo_items_user ON todo_items(user_id);
 CREATE INDEX idx_todo_items_category ON todo_items(category_id);
 CREATE INDEX idx_todo_items_status ON todo_items(user_id, status);
 
--- 5. Enable Row Level Security
+-- 5. User Profiles
+CREATE TABLE IF NOT EXISTS user_profiles (
+  user_id     UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  nickname    TEXT NOT NULL,
+  avatar      TEXT DEFAULT '👤',
+  created_at  TIMESTAMPTZ DEFAULT now(),
+  updated_at  TIMESTAMPTZ DEFAULT now()
+);
+
+-- 6. Bookkeeping Records
+CREATE TABLE IF NOT EXISTS bookkeeping_records (
+  id            BIGINT PRIMARY KEY,
+  user_id       UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  type          TEXT NOT NULL CHECK (type IN ('income', 'expense')),
+  amount        DECIMAL(10,2) NOT NULL CHECK (amount > 0),
+  category      TEXT NOT NULL,
+  note          TEXT DEFAULT '',
+  date          DATE NOT NULL,
+  created_at    TIMESTAMPTZ DEFAULT now()
+);
+CREATE INDEX idx_bk_records_user_date ON bookkeeping_records(user_id, date);
+CREATE INDEX idx_bk_records_user_cat ON bookkeeping_records(user_id, category);
+
+-- 7. Enable Row Level Security
 ALTER TABLE checkin_tasks ENABLE ROW LEVEL SECURITY;
 ALTER TABLE checkin_history ENABLE ROW LEVEL SECURITY;
 ALTER TABLE todo_categories ENABLE ROW LEVEL SECURITY;
 ALTER TABLE todo_items ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE bookkeeping_records ENABLE ROW LEVEL SECURITY;
 
--- 6. RLS Policies: each user can only access their own data
+-- 8. RLS Policies: each user can only access their own data
 CREATE POLICY "user_own_tasks" ON checkin_tasks
   FOR ALL USING (auth.uid() = user_id)
   WITH CHECK (auth.uid() = user_id);
@@ -74,5 +99,13 @@ CREATE POLICY "user_own_todo_categories" ON todo_categories
   WITH CHECK (auth.uid() = user_id);
 
 CREATE POLICY "user_own_todo_items" ON todo_items
+  FOR ALL USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "user_own_profile" ON user_profiles
+  FOR ALL USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "user_own_bk_records" ON bookkeeping_records
   FOR ALL USING (auth.uid() = user_id)
   WITH CHECK (auth.uid() = user_id);

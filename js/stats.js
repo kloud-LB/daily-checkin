@@ -54,7 +54,7 @@ function heatmapColorOverview(rate) {
   if (rate <= 0) return 'var(--heatmap-empty)';
   var dark = document.body.dataset.theme === 'dark';
   var alpha = (0.12 + rate * 0.88).toFixed(2);
-  return 'rgba(99,102,241,' + alpha + ')';
+  return 'rgba(107,125,179,' + alpha + ')';
 }
 
 // ---- Total Completions ----
@@ -307,7 +307,10 @@ function renderTaskStats() {
 }
 
 function renderStats() {
-  if (currentView !== 'viewStats') return;
+  // Only render when checkin view is active and stats sub-tab is visible
+  if (currentView !== 'viewCheckin') return;
+  var statsSub = document.getElementById('subCheckinStats');
+  if (!statsSub || !statsSub.classList.contains('active')) return;
   document.getElementById('yearLabel').textContent = statsYear + '年';
   renderOverviewHeatmap();
   renderTaskStats();
@@ -317,9 +320,9 @@ function renderStats() {
 DataModule({
   id: 'stats',
   state: {},
-  views: ['viewStats'],
+  views: ['viewCheckin'],
   tables: [],
   render: function(viewName) {
-    if (viewName === 'viewStats') renderStats();
+    if (viewName === 'viewCheckin') renderStats();
   }
 });

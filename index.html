@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>每日打卡</title>
 <link rel="stylesheet" href="css/app.css">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@4/fonts/remixicon.css" rel="stylesheet">
 </head>
 <body data-theme="light">
 
@@ -13,47 +14,84 @@
 <div class="app" id="app">
   <header class="header">
     <div class="header-left">
-      <h1>每日打卡</h1>
-      <div class="date" id="headerDate"></div>
-    </div>
-    <button class="theme-btn" id="themeBtn" aria-label="切换主题">🌙</button>
-  </header>
-
-  <!-- Check-in View -->
-  <div class="view active" id="viewCheckin">
-    <div class="task-list" id="taskList"></div>
-    <div class="empty-state" id="emptyState" style="display:none">
-      <div class="empty-icon">📋</div>
-      <p>还没有任务，点击右下角 + 创建一个吧</p>
-    </div>
-  </div>
-
-  <!-- Stats View -->
-  <div class="view" id="viewStats">
-    <div class="year-switcher">
-      <button id="yearPrev">◂</button>
-      <span class="year-label" id="yearLabel"></span>
-      <button id="yearNext">▸</button>
-    </div>
-    <div class="data-bar">
-      <span class="data-bar-title">数据管理</span>
-      <button class="data-btn" id="exportBtn">📤 导出</button>
-      <button class="data-btn" id="importBtn">📥 导入</button>
-    </div>
-    <div class="heatmap-wrap">
-      <div style="display:flex">
-        <div class="heatmap-labels-col" id="heatmapColLabels"></div>
-        <div>
-          <div class="heatmap-labels-row" id="heatmapRowLabels"></div>
-          <div class="heatmap-grid" id="heatmapGrid"></div>
-        </div>
+      <button class="back-btn" id="backBtn" aria-label="返回主页"><i class="ri-arrow-left-s-fill"></i></button>
+      <div class="header-text">
+        <h1 id="headerTitle">主页</h1>
+        <div class="date" id="headerDate"></div>
       </div>
     </div>
-    <div class="heatmap-tooltip" id="heatmapTooltip"></div>
-    <div style="margin-top:20px" id="statsTaskList"></div>
+    <div class="header-right">
+      <button class="avatar-btn" id="avatarBtn" aria-label="用户">👤</button>
+      <button class="theme-btn" id="themeBtn" aria-label="切换主题"><i class="ri-moon-fill"></i></button>
+    </div>
+  </header>
+
+  <!-- ================================================================ -->
+  <!-- Home View -->
+  <!-- ================================================================ -->
+  <div class="view active" id="viewHome">
+    <div class="home-grid">
+      <button class="home-card" data-nav="checkin" style="--card-accent:#6b7db3">
+        <span class="home-card-icon"><i class="ri-checkbox-circle-fill"></i></span>
+        <span class="home-card-title">打卡</span>
+        <span class="home-card-desc">每日任务 · 统计</span>
+      </button>
+      <button class="home-card" data-nav="todo" style="--card-accent:#6b7db3">
+        <span class="home-card-icon"><i class="ri-list-check-3"></i></span>
+        <span class="home-card-title">待办</span>
+        <span class="home-card-desc">任务管理 · 分类</span>
+      </button>
+      <button class="home-card" data-nav="bookkeeping" style="--card-accent:#f59e0b">
+        <span class="home-card-icon"><i class="ri-exchange-dollar-fill"></i></span>
+        <span class="home-card-title">记账</span>
+        <span class="home-card-desc">收支记录 · 统计</span>
+      </button>
+      <button class="home-card disabled" data-nav="weight" style="--card-accent:#9ca3af">
+        <span class="home-card-icon"><i class="ri-scales-fill"></i></span>
+        <span class="home-card-title">体重管理</span>
+        <span class="home-card-desc">即将上线</span>
+      </button>
+    </div>
   </div>
 
+  <!-- ================================================================ -->
+  <!-- Check-in View (打卡 + 统计) -->
+  <!-- ================================================================ -->
+  <div class="view" id="viewCheckin">
+    <div class="sub-nav">
+      <button class="sub-nav-item active" data-sub="checkinList"><i class="ri-checkbox-circle-fill"></i> 打卡</button>
+      <button class="sub-nav-item" data-sub="checkinStats"><i class="ri-bar-chart-fill"></i> 统计</button>
+    </div>
+    <div class="sub-view active" id="subCheckinList">
+      <div class="task-list" id="taskList"></div>
+      <div class="empty-state" id="emptyState" style="display:none">
+        <div class="empty-icon">📋</div>
+        <p>还没有任务，点击右下角 + 创建一个吧</p>
+      </div>
+    </div>
+    <div class="sub-view" id="subCheckinStats">
+      <div class="year-switcher">
+        <button id="yearPrev">◂</button>
+        <span class="year-label" id="yearLabel"></span>
+        <button id="yearNext">▸</button>
+      </div>
+      <div class="heatmap-wrap">
+        <div style="display:flex">
+          <div class="heatmap-labels-col" id="heatmapColLabels"></div>
+          <div>
+            <div class="heatmap-labels-row" id="heatmapRowLabels"></div>
+            <div class="heatmap-grid" id="heatmapGrid"></div>
+          </div>
+        </div>
+      </div>
+      <div class="heatmap-tooltip" id="heatmapTooltip"></div>
+      <div style="margin-top:20px" id="statsTaskList"></div>
+    </div>
+  </div>
+
+  <!-- ================================================================ -->
   <!-- Todo View -->
+  <!-- ================================================================ -->
   <div class="view" id="viewTodo">
     <div class="todo-pills-wrap">
       <div class="todo-pills" id="todoPills"></div>
@@ -65,27 +103,89 @@
     </div>
   </div>
 
+  <!-- ================================================================ -->
+  <!-- Bookkeeping View (记账 | 记录 | 统计) -->
+  <!-- ================================================================ -->
+  <div class="view" id="viewBookkeeping">
+    <div class="sub-nav">
+      <button class="sub-nav-item active" data-bk-tab="add"><i class="ri-edit-circle-fill"></i> 记账</button>
+      <button class="sub-nav-item" data-bk-tab="records"><i class="ri-file-list-3-fill"></i> 记录</button>
+      <button class="sub-nav-item" data-bk-tab="stats"><i class="ri-pie-chart-fill"></i> 统计</button>
+    </div>
+
+    <!-- Tab 1: Add Record -->
+    <div class="sub-view active" id="bkAddView">
+      <div class="bk-section">
+        <div class="bk-section-title">支 出</div>
+        <div class="bk-cat-grid" id="bkExpenseGrid"></div>
+      </div>
+      <div class="bk-section">
+        <div class="bk-section-title">收 入</div>
+        <div class="bk-cat-grid" id="bkIncomeGrid"></div>
+      </div>
+    </div>
+
+    <!-- Tab 2: Records Overview -->
+    <div class="sub-view" id="bkRecordsView">
+      <div class="bk-month-scroll-wrap">
+        <div class="bk-month-scroll" id="bkMonthScroll"></div>
+      </div>
+      <div class="bk-summary" id="bkSummary"></div>
+      <div class="bk-day-list" id="bkDayList"></div>
+      <div class="empty-state" id="bkRecordsEmpty" style="display:none">
+        <div class="empty-icon">📋</div>
+        <p>本月暂无记录</p>
+      </div>
+    </div>
+
+    <!-- Tab 3: Statistics -->
+    <div class="sub-view" id="bkStatsView">
+      <div class="bk-period-row">
+        <div class="bk-period-tabs" id="bkPeriodTabs"></div>
+      </div>
+      <div class="bk-period-scroll-wrap">
+        <div class="bk-period-scroll" id="bkPeriodScroll"></div>
+      </div>
+      <div class="bk-ranking" id="bkRanking"></div>
+      <div class="empty-state" id="bkStatsEmpty" style="display:none">
+        <div class="empty-icon">📊</div>
+        <p>该时段暂无支出记录</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================================================================ -->
+  <!-- Bookkeeping Category Detail View -->
+  <!-- ================================================================ -->
+  <div class="view" id="viewBookkeepingDetail">
+    <div class="bk-period-row">
+      <div class="bk-period-tabs" id="bkDetailPeriodTabs"></div>
+    </div>
+    <div class="bk-period-scroll-wrap">
+      <div class="bk-period-scroll" id="bkDetailPeriodScroll"></div>
+    </div>
+    <div class="bk-chart-wrap" id="bkChartWrap">
+      <svg class="bk-chart" id="bkChart" viewBox="0 0 600 200" preserveAspectRatio="none"></svg>
+    </div>
+    <div class="bk-chart-labels" id="bkChartLabels"></div>
+    <div class="empty-state" id="bkDetailEmpty" style="display:none">
+      <div class="empty-icon">📊</div>
+      <p>该时段暂无此分类记录</p>
+    </div>
+  </div>
+
   <!-- Offline indicator -->
   <div id="offlineBadge" style="display:none;position:fixed;top:20px;right:20px;z-index:600;padding:6px 14px;border-radius:16px;background:rgba(201,122,60,0.9);color:#fff;font-size:0.75rem;font-weight:600;pointer-events:none">🟡 离线</div>
 </div>
 
+<!-- ================================================================ -->
 <!-- FAB -->
-<button class="fab" id="fabBtn">+</button>
+<!-- ================================================================ -->
+<button class="fab" id="fabBtn"><i class="ri-add-fill"></i></button>
 
-<!-- Bottom Nav -->
-<nav class="bottom-nav">
-  <button class="nav-item active" data-view="viewCheckin">
-    <span class="nav-icon">✅</span> 打卡
-  </button>
-  <button class="nav-item" data-view="viewStats">
-    <span class="nav-icon">📊</span> 统计
-  </button>
-  <button class="nav-item" data-view="viewTodo">
-    <span class="nav-icon">📝</span> 待办
-  </button>
-</nav>
-
-<!-- Task Form Modal (打卡) -->
+<!-- ================================================================ -->
+<!-- Check-in Task Form Modal -->
+<!-- ================================================================ -->
 <div class="modal-overlay" id="taskModalOverlay">
   <div class="modal-sheet">
     <div class="modal-handle"></div>
@@ -101,13 +201,15 @@
     <div class="form-group">
       <label class="form-label">主题颜色</label>
       <div class="color-presets" id="colorPresets"></div>
-      <input class="form-input" id="taskColorInput" type="color" value="#6366f1" style="margin-top:8px;height:36px;padding:2px 8px">
+      <input class="form-input" id="taskColorInput" type="color" value="#6b7db3" style="margin-top:8px;height:36px;padding:2px 8px">
     </div>
     <button class="form-submit" id="taskFormSubmit">保存</button>
   </div>
 </div>
 
+<!-- ================================================================ -->
 <!-- Confirm Dialog -->
+<!-- ================================================================ -->
 <div class="dialog-overlay" id="confirmDialog">
   <div class="dialog-box">
     <div class="dialog-text" id="confirmText"></div>
@@ -118,7 +220,9 @@
   </div>
 </div>
 
-<!-- Backfill Sheet -->
+<!-- ================================================================ -->
+<!-- Check-in Backfill Sheet -->
+<!-- ================================================================ -->
 <div class="modal-overlay" id="backfillOverlay">
   <div class="modal-sheet">
     <div class="modal-handle"></div>
@@ -127,7 +231,9 @@
   </div>
 </div>
 
+<!-- ================================================================ -->
 <!-- Todo Form Modal -->
+<!-- ================================================================ -->
 <div class="modal-overlay" id="todoModalOverlay">
   <div class="modal-sheet">
     <div class="modal-handle"></div>
@@ -163,7 +269,9 @@
   </div>
 </div>
 
-<!-- Category Management Modal -->
+<!-- ================================================================ -->
+<!-- Todo Category Management Modal -->
+<!-- ================================================================ -->
 <div class="modal-overlay" id="catModalOverlay">
   <div class="modal-sheet">
     <div class="modal-handle"></div>
@@ -173,7 +281,9 @@
   </div>
 </div>
 
-<!-- Category Edit Modal -->
+<!-- ================================================================ -->
+<!-- Todo Category Edit Modal -->
+<!-- ================================================================ -->
 <div class="modal-overlay" id="catEditOverlay">
   <div class="modal-sheet">
     <div class="modal-handle"></div>
@@ -185,13 +295,15 @@
     <div class="form-group">
       <label class="form-label">颜色</label>
       <div class="color-presets" id="catColorPresets"></div>
-      <input class="form-input" id="catColorInput" type="color" value="#6366f1" style="margin-top:8px;height:36px;padding:2px 8px">
+      <input class="form-input" id="catColorInput" type="color" value="#6b7db3" style="margin-top:8px;height:36px;padding:2px 8px">
     </div>
     <button class="form-submit" id="catEditSubmit">保存</button>
   </div>
 </div>
 
-<!-- Postpone Dialog -->
+<!-- ================================================================ -->
+<!-- Todo Postpone Dialog -->
+<!-- ================================================================ -->
 <div class="modal-overlay" id="postponeOverlay">
   <div class="modal-sheet">
     <div class="modal-handle"></div>
@@ -207,6 +319,136 @@
       <button class="form-submit" id="postponeClear" style="background:var(--input-bg);color:var(--text);flex:1">清除截止时间</button>
       <button class="form-submit" id="postponeSubmit" style="flex:1">确定</button>
     </div>
+  </div>
+</div>
+
+<!-- ================================================================ -->
+<!-- Bookkeeping Amount Calculator Modal -->
+<!-- ================================================================ -->
+<div class="modal-overlay" id="bkAmountOverlay">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="bk-amount-header">
+      <span class="bk-amount-icon" id="bkAmountIcon"></span>
+      <span class="bk-amount-cat" id="bkAmountCat"></span>
+    </div>
+    <div class="bk-amount-display" id="bkAmountDisplay">0</div>
+    <div class="bk-calc-grid">
+      <button class="bk-calc-btn" data-key="7">7</button>
+      <button class="bk-calc-btn" data-key="8">8</button>
+      <button class="bk-calc-btn" data-key="9">9</button>
+      <button class="bk-calc-btn bk-calc-op" data-key="+">+</button>
+      <button class="bk-calc-btn" data-key="4">4</button>
+      <button class="bk-calc-btn" data-key="5">5</button>
+      <button class="bk-calc-btn" data-key="6">6</button>
+      <button class="bk-calc-btn bk-calc-op" data-key="-">−</button>
+      <button class="bk-calc-btn" data-key="1">1</button>
+      <button class="bk-calc-btn" data-key="2">2</button>
+      <button class="bk-calc-btn" data-key="3">3</button>
+      <button class="bk-calc-btn bk-calc-clr" data-key="C">C</button>
+      <button class="bk-calc-btn" data-key="0">0</button>
+      <button class="bk-calc-btn" data-key=".">.</button>
+      <button class="bk-calc-btn bk-calc-ok" data-key="=">✓</button>
+    </div>
+    <div class="form-group">
+      <label class="form-label">日期</label>
+      <input class="form-input" id="bkDateInput" type="date">
+    </div>
+    <div class="form-group">
+      <label class="form-label">备注</label>
+      <input class="form-input" id="bkNoteInput" placeholder="选填" maxlength="60">
+    </div>
+    <button class="form-submit" id="bkAmountSubmit">保存</button>
+  </div>
+</div>
+
+<!-- ================================================================ -->
+<!-- Bookkeeping Category Edit Modal (click icon on record) -->
+<!-- ================================================================ -->
+<div class="modal-overlay" id="bkCatEditOverlay">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">选择分类</div>
+    <div class="bk-section">
+      <div class="bk-section-title">支 出</div>
+      <div class="bk-cat-grid bk-cat-select" id="bkCatEditExpense"></div>
+    </div>
+    <div class="bk-section">
+      <div class="bk-section-title">收 入</div>
+      <div class="bk-cat-grid bk-cat-select" id="bkCatEditIncome"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================ -->
+<!-- Bookkeeping Note Edit Modal (click title on record) -->
+<!-- ================================================================ -->
+<div class="modal-overlay" id="bkNoteEditOverlay">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">编辑备注</div>
+    <div class="form-group">
+      <label class="form-label">备注内容</label>
+      <input class="form-input" id="bkNoteEditInput" placeholder="备注（留空则显示分类名）" maxlength="60">
+    </div>
+    <div style="display:flex;gap:10px">
+      <button class="form-submit" id="bkNoteClear" style="background:var(--input-bg);color:var(--text);flex:1">清除备注</button>
+      <button class="form-submit" id="bkNoteSave" style="flex:1">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================ -->
+<!-- User Panel Overlay -->
+<!-- ================================================================ -->
+<div class="user-panel-overlay" id="userPanelOverlay">
+  <div class="user-panel">
+    <div class="user-panel-header">
+      <button class="user-panel-avatar-btn" id="userPanelAvatarBtn">
+        <span id="userPanelAvatar">👤</span>
+      </button>
+      <div class="user-panel-info">
+        <div class="user-panel-nickname" id="userPanelNickname">用户</div>
+        <div class="user-panel-email" id="userPanelEmail"></div>
+      </div>
+    </div>
+    <div class="user-panel-actions">
+      <button class="user-panel-action" id="userPanelEditAvatar"><i class="ri-image-edit-fill"></i> 更换头像</button>
+      <button class="user-panel-action" id="userPanelEditName"><i class="ri-edit-fill"></i> 修改昵称</button>
+    </div>
+    <div class="user-panel-row">
+      <button class="user-panel-action" id="userPanelExport"><i class="ri-file-download-fill"></i> 导出</button>
+      <button class="user-panel-action" id="userPanelImport"><i class="ri-file-upload-fill"></i> 导入</button>
+    </div>
+    <div class="user-panel-footer">
+      <button class="user-panel-logout" id="userPanelLogout"><i class="ri-logout-box-r-fill"></i> 退出登录</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================ -->
+<!-- Avatar Emoji Picker Modal -->
+<!-- ================================================================ -->
+<div class="modal-overlay" id="avatarPickerOverlay">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">选择头像</div>
+    <div class="emoji-grid" id="emojiGrid"></div>
+  </div>
+</div>
+
+<!-- ================================================================ -->
+<!-- Nickname Edit Modal -->
+<!-- ================================================================ -->
+<div class="modal-overlay" id="nicknameEditOverlay">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">修改昵称</div>
+    <div class="form-group">
+      <label class="form-label">昵称</label>
+      <input class="form-input" id="nicknameEditInput" placeholder="你的昵称" maxlength="20">
+    </div>
+    <button class="form-submit" id="nicknameEditSubmit">保存</button>
   </div>
 </div>
 
@@ -232,6 +474,7 @@
 <script src="js/checkin.js"></script>
 <script src="js/stats.js"></script>
 <script src="js/todo.js"></script>
+<script src="js/bookkeeping.js"></script>
 
 </body>
 </html>

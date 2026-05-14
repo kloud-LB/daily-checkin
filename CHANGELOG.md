@@ -1,5 +1,66 @@
 # 更新日志
 
+## v2.1.1 (2026-05-14)
+
+### Remix Icons 全面替换 + 低饱和度蓝主题色 + 用户面板重构
+
+将全站图标从 Emoji 替换为 [Remix Icon](https://remixicon.com) 矢量图标，统一全局主题色为低饱和度蓝（`#6b7db3`），并重构用户管理面板。
+
+#### 全局主题色变更
+
+- 全局 accent 色从 `#6366f1`（高饱和靛蓝）降为 `#6b7db3`（低饱和度钢蓝）
+- 涉及：导航激活态、表单提交按钮、焦点框、进度条、图表、日历热力图、水波纹等所有 UI 组件
+- **记账模块除外**：保留 8 种独立支出分类色 + 4 种绿色系收入分类色
+
+#### Remix Icons 替换清单
+
+| 位置 | 旧图标 | 新图标（Remix Icon） |
+|------|--------|---------------------|
+| 返回按钮 | `←` 文字 | `ri-arrow-left-s-fill` |
+| 主题切换 | 🌙/☀️ emoji | `ri-moon-fill` / `ri-sun-fill` |
+| 主页-打卡 | ✅ | `ri-checkbox-circle-fill` |
+| 主页-待办 | 📝 | `ri-list-check-3` |
+| 主页-记账 | 💰 | `ri-exchange-dollar-fill` |
+| 主页-体重 | ⚖️ | `ri-scales-fill` |
+| 打卡子导航 | ✅/📊 | `ri-checkbox-circle-fill` / `ri-bar-chart-fill` |
+| 记账子导航 | 💰/📋/📊 | `ri-edit-circle-fill` / `ri-file-list-3-fill` / `ri-pie-chart-fill` |
+| 悬浮按钮 | `+` 文字 | `ri-add-fill` |
+| 打卡-补打卡 | 📅 | `ri-calendar-event-fill` |
+| 打卡-编辑 | ✎ | `ri-edit-fill` |
+| 打卡-删除 | 🗑 | `ri-delete-bin-fill` |
+| 待办-完成 | ✅ | `ri-check-line` |
+| 待办-撤销 | ✅ | `ri-arrow-go-back-line` |
+| 待办-延期 | 📅 | `ri-calendar-event-fill` |
+| 待办-删除 | ❌ | `ri-delete-bin-fill` |
+| 分类-编辑 | ✎ | `ri-edit-fill` |
+| 分类-删除 | 🗑 | `ri-delete-bin-fill` |
+| 用户-头像 | 🖼 | `ri-image-edit-fill` |
+| 用户-昵称 | ✏️ | `ri-edit-fill` |
+| 用户-导出 | — | `ri-file-download-fill` |
+| 用户-导入 | — | `ri-file-upload-fill` |
+| 退出登录 | 纯文字 | `ri-logout-box-r-fill` |
+
+#### 登录页去迁移
+
+- 移除登录表单中"从旧版迁移数据"入口 —— 该功能需已登录用户才能使用，出现在登录页无意义
+- 迁移功能保留在用户面板中（见下方导入按钮）
+
+#### 导入/导出迁移至用户面板
+
+- 从打卡统计页移除独立的 `data-bar` 导出/导入按钮
+- 在用户面板新增一行两个并排按钮：导出（`ri-file-download-fill`）+ 导入（`ri-file-upload-fill`）
+- 新增 `.user-panel-row` CSS 实现并排布局
+
+#### CSS 新增
+
+```css
+.user-panel-row { display: flex; gap: 8px; }
+.user-panel-row .user-panel-action { flex: 1; }
+.home-card-icon { color: var(--card-accent, #6b7db3); }
+```
+
+---
+
 ## v2.1.0 (2026-05-13)
 
 ### 统一数据层架构：模块注册机制 + 缓存优先渲染
@@ -266,3 +327,170 @@ daily-checkin/
 | v1.3.0 | ✅ 已发布 | 待办事项模块（两级分类、优先级、截止时间） |
 | v2.0.0 | ✅ 已发布 | Supabase 全栈架构（多端同步、邮箱登录、离线缓存） |
 | v2.1.0 | ✅ 已发布 | 统一数据层架构（模块注册机制、缓存优先渲染、并行加载） |
+| v2.2.0 | 📋 规划中 | PWA 支持（全屏安装、离线缓存、桌面图标） |
+
+---
+
+## v2.2.0 PWA 方案
+
+### 目标
+
+将现有 Web 应用升级为 PWA（Progressive Web App），用户可"安装"到桌面，获得全屏沉浸体验和离线访问能力。
+
+### 核心改动概览
+
+```
+新增文件：
+  manifest.json          ~25行  PWA 清单（名称、图标、全屏模式、主题色）
+  sw.js                  ~60行  Service Worker（缓存策略 + 离线兜底）
+  icons/icon-192.png     app 图标（192×192）
+  icons/icon-512.png     app 图标（512×512）
+  icons/apple-icon-180.png  iOS 专用图标
+
+修改文件：
+  index.html             +10行  <head> 标签 + SW 注册脚本
+
+不改动文件：
+  css/app.css            (0 改动)
+  js/*.js                (0 改动)
+  supabase/schema.sql    (0 改动)
+```
+
+### 详细方案
+
+#### 1. manifest.json
+
+浏览器读取这个文件来决定"安装"时的行为：
+
+```json
+{
+  "name": "每日打卡",
+  "short_name": "打卡",
+  "description": "任务打卡 · 待办 · 记账",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#e8eaf6",
+  "theme_color": "#6b7db3",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
+```
+
+关键字段说明：
+
+| 字段 | 值 | 效果 |
+|------|-----|------|
+| `display` | `standalone` | 全屏无浏览器边框，独立任务卡片 |
+| `theme_color` | `#6b7db3` | Android 状态栏颜色，与全局主题色一致 |
+| `background_color` | `#e8eaf6` | 启动瞬间背景色，与亮色主题渐变起点一致 |
+
+#### 2. Service Worker（sw.js）
+
+核心职责：拦截网络请求，优先用缓存，离线时兜底。
+
+**缓存策略（Cache-First）**
+
+```
+用户访问 → SW 拦截请求
+              ├─ 缓存中有？ → 直接返回缓存（毫秒级）
+              └─ 缓存中无？ → 走网络 → 成功后存入缓存 → 返回
+```
+
+**分三类缓存：**
+
+| 类型 | 内容 | 策略 | Cache 名 |
+|------|------|------|------|
+| App Shell | index.html, app.css, js/*.js, manifest | 预缓存（install 时写入） | `app-shell-v2` |
+| CDN 资源 | remixicon.css, supabase-js@2 | 缓存优先，24h 过期 | `cdn-libs-v1` |
+| 动态数据 | Supabase API 响应 | **不缓存**（数据由 offline.js 管理） | — |
+
+**为什么 Supabase 数据不进 SW 缓存：**
+现有 `offline.js` + `db.js` 的 localStorage 缓存层已经处理了离线数据，SW 只负责"让页面能打开"，两者分工清晰：
+
+```
+SW：管代码（HTML/CSS/JS 离线可加载）
+offline.js：管数据（打卡记录离线可读写）
+```
+
+**更新机制：**
+- SW 版本号从 `sw.js` 文件内容 hash 自动判定
+- 新版本 SW 在后台 install → activate → 清旧缓存
+- 用户下次打开应用自动生效，无需任何操作
+
+#### 3. index.html 改动
+
+在 `<head>` 中追加：
+
+```html
+<!-- PWA -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#6b7db3">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="打卡">
+<link rel="apple-touch-icon" href="icons/apple-icon-180.png">
+```
+
+页面底部（`</body>` 前）注册 SW：
+
+```html
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js');
+}
+</script>
+```
+
+#### 4. 图标
+
+需要一个 512×512 的 PNG 图标。建议设计：
+
+- **深色圆角方块底板**（`#6b7db3` 主题蓝）
+- **白色对勾**（与打卡功能关联）或 **日历图标** 简化版
+- 直接用 CSS/Canvas 生成即可，不需要设计师
+
+可以用 [maskable.app](https://maskable.app) 在线生成适配不同平台的 safe zone 裁剪。
+
+#### 5. iOS 特殊情况处理
+
+| 问题 | iOS 实际表现 | 处理方式 |
+|------|-------------|--------|
+| 无"安装"弹窗 | 用户需手动「分享 → 添加到主屏幕」 | 首页可加一个轻提示引导 |
+| 无 Web Push | 推送通知不可用 | 不加推送功能，保持现状 |
+| localStorage 上限 | ~200-300MB per PWA | 当前数据量 ~450KB/人，远未触及 |
+| 不显示 splash screen | 用 `apple-touch-icon` + meta 标签指定 | 已在上方 index.html 改动中覆盖 |
+| iOS 后台被杀后 | SW 也会被冻结 | 重新打开时 SW 自动恢复，无感知 |
+
+### 对现有功能的影响
+
+| 现有功能 | PWA 后变化 |
+|----------|-----------|
+| 登录/注册 | 无变化，Supabase Auth cookie 正常工作 |
+| 打卡/待办/记账 | 无变化 |
+| 离线使用 | **增强**：断网仍能打开页面 + 用本地缓存数据 |
+| 主题切换 | 无变化 |
+| 声音 | 无变化（AudioContext 在 standalone 模式下可用） |
+| 导出/导入 | 无变化 |
+| Remix Icon CDN | SW 缓存后离线也能显示图标 |
+| Supabase SDK CDN | SW 缓存后离线加载不报错 |
+
+### 实施步骤（总耗时 ~1 小时）
+
+| 步骤 | 内容 | 预估 |
+|------|------|------|
+| 1 | 生成 3 个尺寸的图标 | 15 分钟 |
+| 2 | 创建 `manifest.json` | 5 分钟 |
+| 3 | 创建 `sw.js` | 20 分钟 |
+| 4 | `index.html` 加 meta 标签 + SW 注册 | 5 分钟 |
+| 5 | 部署 + Chrome DevTools 验证 | 10 分钟 |
+| 6 | 真机测试（Android + iOS） | 15 分钟 |
+
+### 验证方法
+
+- **Chrome DevTools** → Application → Manifest（检查图标、全屏配置）
+- **Chrome DevTools** → Application → Service Workers（检查 SW 已注册、缓存已填充）
+- **Lighthouse** → PWA 审计（目标 90+ 分）
+- **Android Chrome** → 打开网站 → 等待 5 秒 → 底部应弹出安装提示
+- **iOS Safari** → 分享 → 添加到主屏幕 → 图标出现 → 打开验证全屏

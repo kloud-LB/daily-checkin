@@ -6,7 +6,7 @@
 // editingTodoId, editingCatId, postponeTodoId
 
 const DEFAULT_CATEGORIES = [
-  { id: 'work', name: '工作', color: '#6366f1', createdAt: 0 },
+  { id: 'work', name: '工作', color: '#6b7db3', createdAt: 0 },
   { id: 'life', name: '生活', color: '#ec4899', createdAt: 1 },
   { id: 'study', name: '学习', color: '#22c55e', createdAt: 2 }
 ];
@@ -171,7 +171,7 @@ function renderTodoList() {
   var sorted = sortTodoItems(filtered);
   list.innerHTML = sorted.map(function(item) {
     var cat = todoCategories.find(function(c) { return c.id === item.categoryId; });
-    var catColor = cat ? cat.color : '#6366f1';
+    var catColor = cat ? cat.color : '#6b7db3';
     var statusCls = item.status === 'completed' ? ' completed' : (item.status === 'cancelled' ? ' cancelled' : '');
     var overdue = isTodoOverdue(item);
     var descHtml = item.description ? '<div class="todo-desc">' + escHtml(item.description) + '</div>' : '';
@@ -206,19 +206,19 @@ function renderTodoList() {
     var actionsHtml = '';
     if (item.status === 'pending' || item.status === 'postponed') {
       actionsHtml = '<div class="todo-actions">' +
-        '<button class="todo-action-btn done-btn" data-action="complete" title="完成">✅</button>' +
-        '<button class="todo-action-btn postpone-btn" data-action="postpone" title="延期">📅</button>' +
-        '<button class="todo-action-btn delete-btn" data-action="delete" title="删除">❌</button>' +
+        '<button class="todo-action-btn done-btn" data-action="complete" title="完成"><i class="ri-check-line"></i></button>' +
+        '<button class="todo-action-btn postpone-btn" data-action="postpone" title="延期"><i class="ri-calendar-event-fill"></i></button>' +
+        '<button class="todo-action-btn delete-btn" data-action="delete" title="删除"><i class="ri-delete-bin-fill"></i></button>' +
         '</div>';
     } else if (item.status === 'completed') {
       actionsHtml = '<div class="todo-actions">' +
-        '<button class="todo-action-btn done-btn" data-action="undo" title="撤销完成">✅</button>' +
-        '<button class="todo-action-btn delete-btn" data-action="delete" title="删除">❌</button>' +
+        '<button class="todo-action-btn done-btn" data-action="undo" title="撤销完成"><i class="ri-arrow-go-back-line"></i></button>' +
+        '<button class="todo-action-btn delete-btn" data-action="delete" title="删除"><i class="ri-delete-bin-fill"></i></button>' +
         '</div>';
     } else if (item.status === 'cancelled') {
       actionsHtml = '<div class="todo-actions">' +
-        '<button class="todo-action-btn done-btn" data-action="restore" title="恢复">✅</button>' +
-        '<button class="todo-action-btn delete-btn" data-action="delete" title="删除">❌</button>' +
+        '<button class="todo-action-btn done-btn" data-action="restore" title="恢复"><i class="ri-arrow-go-back-line"></i></button>' +
+        '<button class="todo-action-btn delete-btn" data-action="delete" title="删除"><i class="ri-delete-bin-fill"></i></button>' +
         '</div>';
     }
 
@@ -425,8 +425,8 @@ function openCatManager() {
       '<div class="cat-dot" style="background:' + c.color + '"></div>' +
       '<span class="cat-name">' + escHtml(c.name) + '</span>' +
       '<div class="cat-actions">' +
-        '<button class="btn-icon cat-edit-btn" data-cat-id="' + c.id + '" title="编辑" style="font-size:0.85rem">✎</button>' +
-        '<button class="btn-icon cat-delete-btn" data-cat-id="' + c.id + '" title="删除" style="font-size:0.85rem">🗑</button>' +
+        '<button class="btn-icon cat-edit-btn" data-cat-id="' + c.id + '" title="编辑" style="font-size:0.85rem"><i class="ri-edit-fill"></i></button>' +
+        '<button class="btn-icon cat-delete-btn" data-cat-id="' + c.id + '" title="删除" style="font-size:0.85rem"><i class="ri-delete-bin-fill"></i></button>' +
       '</div>' +
     '</div>';
   }).join('');
@@ -456,8 +456,8 @@ function openCatEdit(catId) {
     editingCatId = null;
     document.getElementById('catEditTitle').textContent = '新建分类';
     document.getElementById('catNameInput').value = '';
-    document.getElementById('catColorInput').value = '#6366f1';
-    updateCatColorSelection('#6366f1');
+    document.getElementById('catColorInput').value = '#6b7db3';
+    updateCatColorSelection('#6b7db3');
   }
   document.getElementById('catEditOverlay').classList.add('show');
 }

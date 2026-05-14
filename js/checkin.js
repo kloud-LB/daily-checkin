@@ -144,9 +144,9 @@ function renderTasks() {
         (t.targetCount > 1 ? '<div class="task-progress-bar"><div class="task-progress-fill" style="width:' + pct + '%;background:' + t.color + '"></div></div>' : '') +
       '</div>' +
       '<div class="task-actions">' +
-        '<button class="btn-icon backfill-btn" data-task-id="' + t.id + '" title="补打卡" style="font-size:0.85rem">📅</button>' +
-        '<button class="btn-icon edit-btn" data-task-id="' + t.id + '" title="编辑">✎</button>' +
-        '<button class="btn-icon delete-btn" data-task-id="' + t.id + '" title="删除">🗑</button>' +
+        '<button class="btn-icon backfill-btn" data-task-id="' + t.id + '" title="补打卡" style="font-size:0.85rem"><i class="ri-calendar-event-fill"></i></button>' +
+        '<button class="btn-icon edit-btn" data-task-id="' + t.id + '" title="编辑"><i class="ri-edit-fill"></i></button>' +
+        '<button class="btn-icon delete-btn" data-task-id="' + t.id + '" title="删除"><i class="ri-delete-bin-fill"></i></button>' +
       '</div>' +
       '<div class="' + checkCls + '" style="color:' + t.color + ';' + (t.targetCount > 1 && !done ? 'font-size:0.85rem;font-weight:700' : '') + '">' + checkContent + '</div>' +
     '</div>';
@@ -203,8 +203,8 @@ function openAddModal() {
   document.getElementById('taskModalTitle').textContent = '新建任务';
   document.getElementById('taskNameInput').value = '';
   document.getElementById('taskCountInput').value = '1';
-  document.getElementById('taskColorInput').value = '#6366f1';
-  updateColorSelection('#6366f1');
+  document.getElementById('taskColorInput').value = '#6b7db3';
+  updateColorSelection('#6b7db3');
   document.getElementById('taskModalOverlay').classList.add('show');
   setTimeout(function() { document.getElementById('taskNameInput').focus(); }, 350);
 }
@@ -405,6 +405,36 @@ DataModule({
     document.getElementById('taskFormSubmit').onclick = saveTask;
     document.getElementById('taskColorInput').oninput = function() { updateColorSelection(document.getElementById('taskColorInput').value); };
     document.getElementById('backfillOverlay').onclick = function(e) { if (e.target === document.getElementById('backfillOverlay')) closeBackfill(); };
+
+    // Sub-nav tab switching inside checkin view
+    var checkinSubNav = document.querySelectorAll('#viewCheckin .sub-nav-item');
+    checkinSubNav.forEach(function(btn) {
+      btn.onclick = function() {
+        var sub = btn.dataset.sub;
+        checkinSubNav.forEach(function(b) { b.classList.remove('active'); });
+        btn.classList.add('active');
+        document.getElementById('subCheckinList').classList.toggle('active', sub === 'checkinList');
+        document.getElementById('subCheckinStats').classList.toggle('active', sub === 'checkinStats');
+        if (sub === 'checkinStats') {
+          statsYear = new Date().getFullYear();
+          renderStats();
+        }
+        var fab = document.getElementById('fabBtn');
+        if (fab) fab.style.display = sub === 'checkinList' ? '' : 'none';
+      };
+    });
+  },
+  onNavigate: function(viewName) {
+    if (viewName === 'viewCheckin') {
+      // Reset to checkin list tab
+      var items = document.querySelectorAll('#viewCheckin .sub-nav-item');
+      items.forEach(function(b) { b.classList.remove('active'); });
+      if (items[0]) items[0].classList.add('active');
+      document.getElementById('subCheckinList').classList.add('active');
+      document.getElementById('subCheckinStats').classList.remove('active');
+      var fab = document.getElementById('fabBtn');
+      if (fab) fab.style.display = '';
+    }
   },
   migrate: async function(data, sb, uid) {
     var inserted = 0, errors = 0;
@@ -412,7 +442,7 @@ DataModule({
       var t = data.tasks[i];
       var res = await sb.from('checkin_tasks').upsert({
         id: parseInt(t.id) || (Date.now() + i), user_id: uid, name: t.name,
-        target_count: t.targetCount || 1, color: t.color || '#6366f1',
+        target_count: t.targetCount || 1, color: t.color || '#6b7db3',
         created_at: new Date(t.createdAt || Date.now()).toISOString()
       });
       if (res.error) errors++; else inserted++;
