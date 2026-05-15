@@ -1,4 +1,4 @@
-# Crabbit!！
+# Crabbit!
 
 零依赖、纯前端生活管理应用，支持 Supabase 云端同步。
 
