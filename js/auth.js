@@ -175,15 +175,40 @@ async function initAuth() {
 // ---- Auth UI ----
 function getAuthHTML() {
   return '<div class="auth-container" id="authContainer">' +
-    '<div class="auth-card">' +
+    // ====== Login Card ======
+    '<div class="auth-card" id="authLoginCard">' +
       '<div class="auth-header">' +
         '<div style="font-size:2rem">📋</div>' +
         '<h2 style="margin:8px 0 4px;font-size:1.2rem">每日打卡</h2>' +
         '<p style="font-size:0.8rem;color:var(--text-secondary)">登录以同步数据到云端</p>' +
       '</div>' +
       '<div class="form-group">' +
+        '<label class="form-label">邮箱</label>' +
+        '<input class="form-input" id="loginEmail" type="email" placeholder="your@email.com" autocomplete="email">' +
+      '</div>' +
+      '<div class="form-group">' +
+        '<label class="form-label">密码</label>' +
+        '<input class="form-input" id="loginPassword" type="password" placeholder="至少6位" autocomplete="current-password">' +
+      '</div>' +
+      '<div class="auth-err" id="loginError"></div>' +
+      '<button class="form-submit" id="authSignInBtn">登录</button>' +
+      '<p style="text-align:center;font-size:0.82rem;color:var(--text-secondary);margin-top:16px">' +
+        '还没有账号？<a role="button" id="goRegister" style="color:#6b7db3;cursor:pointer;font-weight:600">点击注册</a>' +
+      '</p>' +
+      '<p style="text-align:center;font-size:0.65rem;color:var(--text-tertiary);margin-top:12px">' +
+        '你的数据仅属于你，通过 Row Level Security 隔离' +
+      '</p>' +
+    '</div>' +
+    // ====== Register Card ======
+    '<div class="auth-card" id="authRegisterCard" style="display:none">' +
+      '<div class="auth-header">' +
+        '<div style="font-size:2rem">📋</div>' +
+        '<h2 style="margin:8px 0 4px;font-size:1.2rem">创建账号</h2>' +
+        '<p style="font-size:0.8rem;color:var(--text-secondary)">设置昵称头像，数据云端同步</p>' +
+      '</div>' +
+      '<div class="form-group">' +
         '<label class="form-label">昵称</label>' +
-        '<input class="form-input" id="authNickname" type="text" placeholder="给自己起个名字" maxlength="20">' +
+        '<input class="form-input" id="regNickname" type="text" placeholder="给自己起个名字" maxlength="20">' +
       '</div>' +
       '<div class="form-group">' +
         '<label class="form-label">头像</label>' +
@@ -191,15 +216,17 @@ function getAuthHTML() {
       '</div>' +
       '<div class="form-group">' +
         '<label class="form-label">邮箱</label>' +
-        '<input class="form-input" id="authEmail" type="email" placeholder="your@email.com">' +
+        '<input class="form-input" id="regEmail" type="email" placeholder="your@email.com" autocomplete="email">' +
       '</div>' +
       '<div class="form-group">' +
         '<label class="form-label">密码</label>' +
-        '<input class="form-input" id="authPassword" type="password" placeholder="至少6位">' +
+        '<input class="form-input" id="regPassword" type="password" placeholder="至少6位" autocomplete="new-password">' +
       '</div>' +
-      '<div id="authError" style="color:#c97a3c;font-size:0.78rem;margin-bottom:8px;display:none"></div>' +
-      '<button class="form-submit" id="authSignInBtn" style="margin-bottom:8px">登录</button>' +
-      '<button class="form-submit" id="authSignUpBtn" style="background:var(--input-bg);color:var(--text)">注册新账号</button>' +
+      '<div class="auth-err" id="regError"></div>' +
+      '<button class="form-submit" id="authSignUpBtn">注册新账号</button>' +
+      '<p style="text-align:center;font-size:0.82rem;color:var(--text-secondary);margin-top:16px">' +
+        '已有账号？<a role="button" id="goLogin" style="color:#6b7db3;cursor:pointer;font-weight:600">点击登录</a>' +
+      '</p>' +
       '<p style="text-align:center;font-size:0.65rem;color:var(--text-tertiary);margin-top:12px">' +
         '你的数据仅属于你，通过 Row Level Security 隔离' +
       '</p>' +
@@ -211,8 +238,11 @@ var _authAvatarSelected = '👤';
 
 function showAuthUI() {
   var existing = document.getElementById('authContainer');
-  if (existing) existing.style.display = '';
-  else {
+  if (existing) {
+    existing.style.display = '';
+    // Always reset to login card
+    switchAuthCard('login');
+  } else {
     var div = document.createElement('div');
     div.innerHTML = getAuthHTML();
     document.body.appendChild(div.firstElementChild);
@@ -229,10 +259,40 @@ function hideAuthUI() {
   document.getElementById('fabBtn').style.display = '';
 }
 
+function switchAuthCard(mode) {
+  var loginCard = document.getElementById('authLoginCard');
+  var regCard = document.getElementById('authRegisterCard');
+  if (!loginCard || !regCard) return;
+
+  // Clear errors on both cards
+  var le = document.getElementById('loginError'); if (le) { le.textContent = ''; le.style.display = 'none'; }
+  var re = document.getElementById('regError'); if (re) { re.textContent = ''; re.style.display = 'none'; }
+
+  if (mode === 'login') {
+    // Copy email from register → login if register has a value
+    var regEmail = document.getElementById('regEmail');
+    var loginEmail = document.getElementById('loginEmail');
+    if (regEmail && loginEmail && regEmail.value.trim()) {
+      loginEmail.value = regEmail.value.trim();
+    }
+    loginCard.style.display = '';
+    regCard.style.display = 'none';
+  } else {
+    // Copy email from login → register if login has a value
+    var lgEmail = document.getElementById('loginEmail');
+    var rgEmail = document.getElementById('regEmail');
+    if (lgEmail && rgEmail && lgEmail.value.trim()) {
+      rgEmail.value = lgEmail.value.trim();
+    }
+    loginCard.style.display = 'none';
+    regCard.style.display = '';
+    renderAuthAvatarPicker();
+  }
+}
+
 function renderAuthAvatarPicker() {
   var container = document.getElementById('authAvatarPick');
   if (!container) return;
-  // Show first 16 emoji as quick picks
   var picks = AVATAR_EMOJIS.slice(0, 16);
   container.innerHTML = picks.map(function(e) {
     return '<button class="auth-avatar-opt' + (e === _authAvatarSelected ? ' selected' : '') +
@@ -248,60 +308,90 @@ function renderAuthAvatarPicker() {
 }
 
 function bindAuthEvents() {
-  var emailEl = document.getElementById('authEmail');
-  var passEl = document.getElementById('authPassword');
-  var nickEl = document.getElementById('authNickname');
-  var errEl = document.getElementById('authError');
-
   renderAuthAvatarPicker();
 
-  function showErr(msg) { errEl.textContent = msg; errEl.style.display = ''; }
-  function hideErr() { errEl.style.display = 'none'; }
+  // ---- Card switching ----
+  document.getElementById('goRegister').onclick = function() { switchAuthCard('register'); };
+  document.getElementById('goLogin').onclick = function() { switchAuthCard('login'); };
 
+  // ---- Helper for login errors ----
+  function showLoginErr(msg) {
+    var el = document.getElementById('loginError');
+    el.textContent = msg; el.style.display = '';
+  }
+  function showRegErr(msg) {
+    var el = document.getElementById('regError');
+    el.textContent = msg; el.style.display = '';
+  }
+
+  // ---- Sign In ----
   document.getElementById('authSignInBtn').onclick = async function() {
-    hideErr();
-    var email = emailEl.value.trim();
-    var pass = passEl.value;
-    if (!email || !pass) { showErr('请填写邮箱和密码'); return; }
-    if (pass.length < 6) { showErr('密码至少6位'); return; }
+    var btn = document.getElementById('authSignInBtn');
+    showLoginErr('');
+    var email = document.getElementById('loginEmail').value.trim();
+    var pass = document.getElementById('loginPassword').value;
+    if (!email || !pass) { showLoginErr('请填写邮箱和密码'); return; }
+    if (pass.length < 6) { showLoginErr('密码至少6位'); return; }
+    btn.textContent = '登录中…'; btn.disabled = true;
     try {
       var resp = await getSupabase().auth.signInWithPassword({ email: email, password: pass });
-      if (resp.error) showErr(resp.error.message);
-    } catch(e) { showErr('登录失败，请检查网络'); }
+      if (resp.error) { showLoginErr('邮箱或密码错误'); btn.textContent = '登录'; btn.disabled = false; }
+      // Success → onAuthStateChange fires → hideAuthUI + onUserReady
+    } catch(e) { showLoginErr('登录失败，请检查网络'); btn.textContent = '登录'; btn.disabled = false; }
   };
 
+  // ---- Sign Up ----
   document.getElementById('authSignUpBtn').onclick = async function() {
-    hideErr();
-    var nickname = nickEl.value.trim();
-    var email = emailEl.value.trim();
-    var pass = passEl.value;
-    if (!nickname) { showErr('请填写昵称'); return; }
-    if (!email || !pass) { showErr('请填写邮箱和密码'); return; }
-    if (pass.length < 6) { showErr('密码至少6位'); return; }
+    var btn = document.getElementById('authSignUpBtn');
+    showRegErr('');
+    var nickname = document.getElementById('regNickname').value.trim();
+    var email = document.getElementById('regEmail').value.trim();
+    var pass = document.getElementById('regPassword').value;
+    if (!nickname) { showRegErr('请填写昵称'); return; }
+    if (!email || !pass) { showRegErr('请填写邮箱和密码'); return; }
+    if (pass.length < 6) { showRegErr('密码至少6位'); return; }
+    btn.textContent = '注册中…'; btn.disabled = true;
     try {
       var resp = await getSupabase().auth.signUp({ email: email, password: pass });
-      if (resp.error) { showErr(resp.error.message); return; }
-      // Create user profile
+
+      // Error: email already registered
+      if (resp.error) {
+        if (resp.error.message && resp.error.message.toLowerCase().indexOf('already') !== -1) {
+          showRegErr('该邮箱已注册，请直接登录');
+          btn.textContent = '注册新账号'; btn.disabled = false;
+          setTimeout(function() { switchAuthCard('login'); }, 800);
+        } else {
+          showRegErr(resp.error.message);
+          btn.textContent = '注册新账号'; btn.disabled = false;
+        }
+        return;
+      }
+
+      // Write user profile
       var uid = resp.data.user ? resp.data.user.id : null;
       if (uid) {
         userProfile = { nickname: nickname, avatar: _authAvatarSelected };
         try {
           await getSupabase().from('user_profiles').upsert({
-            user_id: uid,
-            nickname: nickname,
-            avatar: _authAvatarSelected,
+            user_id: uid, nickname: nickname, avatar: _authAvatarSelected,
             updated_at: new Date().toISOString()
           });
           dbCacheSave(uid, 'checkin_cache_profile', userProfile);
-        } catch(e) { /* profile write failed */ }
+        } catch(e) { /* profile write failed, non-critical */ }
         updateAvatarBtn();
-        showErr('注册成功！请登录（若开启了邮箱确认，请查看收件箱）');
-      } else {
-        showErr('注册成功！请登录');
       }
-    } catch(e) { showErr('注册失败，请检查网络'); }
-  };
 
+      // Auto-login or email confirmation
+      if (resp.data.session) {
+        // Email confirm disabled — onAuthStateChange fires automatically, no action needed
+      } else {
+        // Email confirm enabled — session is null, user must confirm first
+        showRegErr('注册成功！请查收确认邮件后登录');
+        btn.textContent = '注册新账号'; btn.disabled = false;
+        setTimeout(function() { switchAuthCard('login'); }, 1500);
+      }
+    } catch(e) { showRegErr('注册失败，请检查网络'); btn.textContent = '注册新账号'; btn.disabled = false; }
+  };
 }
 
 // ---- User Panel Events ----

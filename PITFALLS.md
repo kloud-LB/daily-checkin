@@ -311,3 +311,148 @@ Supabase 免费额度（截至 2026 年）：
 ```
 
 iOS 有 Vision 框架（原生 OCR），Android 可用 ML Kit Text Recognition。PWA 可用 Tesseract.js（纯前端，约 2MB）。准确率针对支付成功页面的规整大字体接近 100%。
+
+---
+
+## 9. Supabase 邮箱确认开启导致注册后无法登录
+
+### 现象
+
+注册成功（`signUp` 返回 200），但立即点击登录时报 `Invalid login credentials`。刷新页面也显示未登录。邮箱中收到 Supabase 确认邮件，但未点确认。
+
+### 问题分析
+
+Supabase Auth 的邮箱确认机制：
+
+```
+signUp(email, password)
+  └─ Email Confirm ON（默认）
+       ├─ 创建 auth.users 行（email_confirmed_at = NULL）
+       ├─ 发送确认邮件
+       └─ 返回 { user, session: null }  ← 没有 session！
+
+signInWithPassword(email, password)
+  └─ 检查 email_confirmed_at
+       ├─ NULL → 拒绝登录 "Invalid login credentials"
+       └─ 有值 → 允许登录，返回 session
+```
+
+**根因**：Supabase 默认开启邮箱确认（需手动在 Dashboard 关闭）。确认关闭前，`signUp` 返回的 `session` 始终为 `null`，用户没有活跃会话。此时间点调用 `signInWithPassword` 会因 `email_confirmed_at = NULL` 被拒绝。
+
+### 处理方案
+
+| 步骤 | 操作 |
+|------|------|
+| 1 | Supabase Dashboard → **Authentication** → **Settings** → **Email** |
+| 2 | 关闭 **Confirm email** 开关 |
+| 3 | 保存。新注册用户 `signUp` 直接返回 `{ user, session }`，自动登录 |
+
+前端也应做兼容处理：注册后检查 `resp.data.session` 是否存在：
+- 有 `session` → 自动登录（`onAuthStateChange` 触发进应用）
+- 无 `session` → 提示"请查收确认邮件后登录"，不自动进应用
+
+---
+
+## 10. 登录/注册混在同一界面导致用户困惑
+
+### 现象
+
+旧版登录界面同时展示昵称、头像、邮箱、密码四个字段，底部两个按钮「登录」「注册新账号」。用户在登录时会困惑是否需要填昵称和头像，注册流程也不清晰。
+
+### 问题分析
+
+单卡片混合设计的问题：
+
+| 场景 | 困惑点 |
+|------|--------|
+| 用户登录 | 看到昵称和头像字段，不确定是否需要填写 |
+| 用户注册 | 注册按钮样式弱化（灰底黑字），视觉上不如登录按钮突出 |
+| 注册成功 | 提示"注册成功！请登录"但表单仍显示注册状态，用户需手动再点登录 |
+
+**根因**：登录和注册是两个不同场景，所需字段不同（登录仅邮箱+密码），但 UI 没有区分。底部切换链接也不明显。
+
+### 处理方案
+
+拆为两张独立卡片，通过点击链接切换：
+
+```
+登录卡片                      注册卡片
+┌──────────────────┐         ┌──────────────────┐
+│ 邮箱              │         │ 昵称              │
+│ 密码              │         │ 头像（emoji 选择） │
+│ [登录]            │         │ 邮箱              │
+│ 没有账号？注册 →  │  ←──→   │ 密码              │
+│                  │         │ [注册新账号]       │
+└──────────────────┘         │ 已有账号？登录 ←   │
+                             └──────────────────┘
+```
+
+关键行为：
+- 切换卡片时保留已填邮箱
+- 注册成功（有 session）→ 直接进应用，无需手动登录
+- 已注册邮箱 → 提示并自动切回登录卡片
+
+实现见 `js/auth.js` 中 `getAuthHTML()`、`switchAuthCard()`、`bindAuthEvents()`。
+
+---
+
+## 11. GitHub Pages 更改源分支后不自动重建
+
+### 现象
+
+在 GitHub repo 的 Settings → Pages 中将源分支从 `main` 改为 `v2`，保存后显示部署成功，但访问页面仍然是旧版本内容。
+
+### 问题分析
+
+GitHub Pages 在更改源分支后**不一定触发自动重建**。原因：
+1. 新的源分支上如果没有新的 commit（最后 commit 时间早于切换操作），Pages 可能认为无需重新部署
+2. Pages 构建队列有时会跳过"无变更"的分支切换
+3. 浏览器或 CDN 缓存了旧版本（`index.html` 被强缓存）
+
+**根因**：GitHub Pages 的部署触发条件是源分支有新 commit，仅更改设置不产生新 commit。加上 Cloudflare CDN 默认缓存静态资源，用户看到的可能是多层缓存叠加的结果。
+
+### 处理方案
+
+强制触发重新部署：
+
+```bash
+git commit --allow-empty -m "trigger: force GitHub Pages redeploy"
+git push origin v2
+```
+
+空 commit 会在源分支上产生新 SHA，Pages 检测到 commit 变更后必然重新构建。
+
+验证方法：
+- 访问 `https://xxx.github.io/daily-checkin/?v=2`（加随机参数绕过 CDN 缓存）
+- 或在 DevTools Network 面板勾选 "Disable cache" 后刷新
+
+---
+
+## 12. 网络断开时登录按钮无反馈
+
+### 现象
+
+填写邮箱密码后点击登录，按钮没有任何变化，也没有错误提示。用户以为功能坏了。
+
+### 问题分析
+
+登录代码使用 `await supabase.auth.signInWithPassword(...)`，网络断开时 TCP 连接超时通常需要 **30-120 秒**。在此期间：
+- `await` 一直等待 Promise resolve/reject
+- 按钮没有视觉变化（无 loading、无 disabled）
+- 用户连续点击多次，堆积多个等待中的请求
+
+**根因**：异步请求没有立即给用户反馈。浏览器默认的 TCP 超时很长，`fetch` 不会快速失败。用户需要知道"请求已发出，正在等待响应"，而非"点了没反应"。
+
+### 处理方案
+
+点击后立即给三个反馈：
+
+```javascript
+btn.textContent = '登录中…';   // 文字变化
+btn.disabled = true;            // 不可重复点击
+// 请求完成后恢复
+btn.textContent = '登录';
+btn.disabled = false;
+```
+
+这三个改动成本极低（每个按钮 2 行代码），但对体验的影响远大于代码量。对所有需要网络等待的按钮（登录、注册、保存等）都应加此处理。
